@@ -1,0 +1,22 @@
+dependencies {
+    api project(':platform-governance-api')
+    api project(':platform-governance-audit')
+    api project(':platform-governance-config')
+    api project(':platform-governance-core')
+    api project(':platform-governance-engine')
+
+    implementation "io.github.jho951:audit-log-core:${rootProject.auditLogVersion}"
+    implementation "io.github.jho951:policy-config-core:${rootProject.policyConfigVersion}"
+    implementation "io.github.jho951:policy-config-builder:${rootProject.policyConfigVersion}"
+    implementation "io.github.jho951:plugin-policy-engine-config:${rootProject.pluginPolicyEngineVersion}"
+
+    compileOnly "org.springframework:spring-context:${rootProject.springFrameworkVersion}"
+    compileOnly "org.springframework.boot:spring-boot-autoconfigure:${rootProject.springBootVersion}"
+    compileOnly "org.springframework.boot:spring-boot-configuration-processor:${rootProject.springBootVersion}"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:${rootProject.springBootVersion}"
+
+    testImplementation "org.springframework:spring-context:${rootProject.springFrameworkVersion}"
+    testImplementation "org.springframework.boot:spring-boot-autoconfigure:${rootProject.springBootVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${rootProject.junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${rootProject.junitVersion}"
+}

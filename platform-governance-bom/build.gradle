@@ -1,0 +1,59 @@
+plugins {
+    id 'java-platform'
+    id 'maven-publish'
+}
+
+group = 'io.github.jho951.platform'
+version = findProperty('releaseVersion') ?: '0.1.0-SNAPSHOT'
+
+javaPlatform {
+    allowDependencies()
+}
+
+dependencies {
+    constraints {
+        api project(':platform-governance-api')
+        api project(':platform-governance-audit')
+        api project(':platform-governance-config')
+        api project(':platform-governance-core')
+        api project(':platform-governance-engine')
+        api project(':platform-governance-spring')
+        api project(':platform-governance-spring-boot-starter')
+        api project(':platform-governance-common-test')
+
+        api "io.github.jho951:audit-log-api:${rootProject.auditLogVersion}"
+        api "io.github.jho951:audit-log-core:${rootProject.auditLogVersion}"
+        api "io.github.jho951:policy-config-contracts:${rootProject.policyConfigVersion}"
+        api "io.github.jho951:policy-config-core:${rootProject.policyConfigVersion}"
+        api "io.github.jho951:policy-config-builder:${rootProject.policyConfigVersion}"
+        api "io.github.jho951:plugin-policy-engine-api:${rootProject.pluginPolicyEngineVersion}"
+        api "io.github.jho951:plugin-policy-engine-core:${rootProject.pluginPolicyEngineVersion}"
+        api "io.github.jho951:plugin-policy-engine-config:${rootProject.pluginPolicyEngineVersion}"
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.javaPlatform
+            artifactId = project.name
+            pom {
+                name = project.name
+                description = "platform-governance BOM"
+                url = "https://github.com/jho951/platform-governance"
+            }
+        }
+    }
+    repositories {
+        if (project.hasProperty('githubPackagesUrl')) {
+            maven {
+                name = 'GitHubPackages'
+                url = uri(project.property('githubPackagesUrl'))
+                credentials {
+                    username = project.findProperty('githubPackagesUsername') ?: System.getenv('GITHUB_ACTOR')
+                    password = project.findProperty('githubPackagesToken') ?: System.getenv('GITHUB_TOKEN')
+                }
+            }
+        }
+    }
+}

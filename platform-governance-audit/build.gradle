@@ -1,0 +1,7 @@
+dependencies {
+    api project(':platform-governance-api')
+    api "io.github.jho951:audit-log-api:${rootProject.auditLogVersion}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${rootProject.junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${rootProject.junitVersion}"
+}

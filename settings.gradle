@@ -1,0 +1,40 @@
+rootProject.name = 'platform-governance'
+
+include 'platform-governance-bom'
+include 'platform-governance-api'
+include 'platform-governance-audit'
+include 'platform-governance-config'
+include 'platform-governance-core'
+include 'platform-governance-engine'
+include 'platform-governance-spring'
+include 'platform-governance-spring-boot-starter'
+include 'platform-governance-common-test'
+
+def layer1Roots = [
+        [path: file('../../module/audit-log'), substitutions: [
+                [module: 'io.github.jho951:audit-log-api', projectPath: ':audit-log-api'],
+                [module: 'io.github.jho951:audit-log-core', projectPath: ':audit-log-core']
+        ]],
+        [path: file('../../module/policy-config'), substitutions: [
+                [module: 'io.github.jho951:policy-config-contracts', projectPath: ':policy-config-contracts'],
+                [module: 'io.github.jho951:policy-config-core', projectPath: ':policy-config-core'],
+                [module: 'io.github.jho951:policy-config-builder', projectPath: ':policy-config-builder']
+        ]],
+        [path: file('../../module/plugin-policy-engine'), substitutions: [
+                [module: 'io.github.jho951:plugin-policy-engine-api', projectPath: ':plugin-policy-engine-api'],
+                [module: 'io.github.jho951:plugin-policy-engine-config', projectPath: ':plugin-policy-engine-config'],
+                [module: 'io.github.jho951:plugin-policy-engine-core', projectPath: ':plugin-policy-engine-core']
+        ]]
+]
+
+if (providers.gradleProperty('useLocalLayer1').map { it.toBoolean() }.orElse(false).get()) {
+    layer1Roots.findAll { it.path.exists() }.each { layer1 ->
+        includeBuild(layer1.path) {
+            dependencySubstitution {
+                layer1.substitutions.each { substitution ->
+                    substitute module(substitution.module) using project(substitution.projectPath)
+                }
+            }
+        }
+    }
+}
