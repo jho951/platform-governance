@@ -44,8 +44,8 @@ jobs:
       - name: Publish to GitHub Packages
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GITHUB_ACTOR: jho951
           GITHUB_PACKAGES_URL: https://maven.pkg.github.com/${{ github.repository }}
         run: |
           ./gradlew clean test publish \

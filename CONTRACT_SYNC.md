@@ -42,5 +42,5 @@
 - starter: `io.github.jho951.platform:platform-governance-spring-boot-starter`
 - GitHub Packages private Maven registry를 사용한다.
 - GitHub Actions publish는 `v*` tag 또는 수동 dispatch로 실행한다.
-- 현재 배포 준비 version은 `1.0.1`이다.
+- 현재 배포 준비 version은 `1.0.0`이다.
 - private consumer는 `GITHUB_ACTOR`와 `GITHUB_TOKEN` 또는 `GH_PACKAGES_TOKEN` secret으로 GitHub Packages를 인증한다.

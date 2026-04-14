@@ -44,7 +44,7 @@
 
 ```gradle
 dependencies {
-    implementation platform("io.github.jho951.platform:platform-governance-bom:1.0.1")
+    implementation platform("io.github.jho951.platform:platform-governance-bom:1.0.0")
     implementation "io.github.jho951.platform:platform-governance-spring-boot-starter"
 }
 ```
