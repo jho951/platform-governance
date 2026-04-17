@@ -23,7 +23,7 @@ public final class AuditLoggerAuditLogRecorder implements AuditLogRecorder {
                 .actor("platform-governance", AuditActorType.SYSTEM, "platform-governance")
                 .resource(entry.category(), entry.category())
                 .result(AuditResult.SUCCESS)
-                .details(entry.attributes())
+                .details(SensitiveAuditRedactor.redactStrings(entry.attributes()))
                 .occurredAt(entry.occurredAt())
                 .build());
     }

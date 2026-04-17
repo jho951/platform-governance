@@ -7,9 +7,55 @@
 3. `docs/governance-model.md`에 평가 순서를 추가한다.
 4. `docs/modules.md`에 역할을 추가한다.
 
+## 계층 책임
+
+- 3계층 서비스는 1계층 OSS를 직접 조립하지 않는다.
+- 2계층은 공통 운영정책의 실행 골격을 제공한다.
+- 3계층은 자기 서비스에 필요한 정책 값만 선언한다.
+- 정말 전사 공통인 불변 규칙만 2계층에서 강제한다.
+- 서비스 차이가 필요한 부분은 override 가능하게 둔다.
+- 정책 변경과 위반 대응은 2계층 표준 계약을 사용한다.
+
+## Override point
+
+3계층 서비스가 교체할 수 있는 bean은 다음이다.
+
+- `PolicyConfigSource`
+- `GovernancePolicyPlugin`
+- `GovernanceDecisionEngine`
+- `AuditLogRecorder`
+- `IdentityAuditRecorder`
+- `IdentityAuditCustomizer`
+- `AuditAttributeEnricher`
+- `AuditContextResolver`
+- `PolicyChangeRecorder`
+- `ViolationHandler`
+- `FeatureFlagClient`
+- `PolicyResolver`
+- `Clock`
+
+`platform-governance-spring`은 위 bean들을 `@ConditionalOnMissingBean` 중심으로 등록한다.
+서비스는 `GovernancePolicyPlugin` 또는 `GovernanceDecisionEngine`을 등록해 도메인별 정책 판단만 바꾼다.
+`GovernancePolicyService`는 audit 기록, violation handling, wrapper 수준의 공통 골격을 포함하므로 일반적인 override point가 아니다.
+
+## Preset 확장 기준
+
+새 `service-role-preset`은 여러 서비스에서 반복되는 운영 기본값이 있을 때만 추가한다.
+
+- 특정 서비스 이름을 preset에 넣지 않는다.
+- 도메인 정책 key를 preset에 넣지 않는다.
+- 명시 설정을 덮어쓰지 않고, 설정하지 않은 기본값만 채운다.
+- fail-fast 완화가 필요한 preset은 왜 완화하는지 문서화한다.
+
 ## 주의점
 
 - capability module에 Spring 의존성을 넣지 않는다.
 - `platform-governance-core`에는 audit/config/engine별 1계층 조립 책임을 넣지 않는다.
 - plugin은 결정 이유를 설명할 수 있어야 한다.
 - audit는 결과와 사유를 남겨야 한다.
+- governance audit는 정책 source 전체 snapshot이 아니라 request/context/verdict/evidence를 남긴다.
+- Auth-server 같은 identity 서비스는 범용 `AuditLogRecorder` 대신 `IdentityAuditRecorder`를 우선 소비한다.
+- 2계층은 identity taxonomy와 required field validation을 제공하되, sink 자체는 1계층 `audit-log`의 `AuditSink`를 사용한다.
+- 정책 변경은 `PolicyChangeRecorder`로 기록한다.
+- 위반 대응은 `ViolationHandler`를 추가하거나 override한다.
+- 운영 환경에서 fail-fast를 완화해야 한다면 `platform.governance.operational.*`에 의도를 명시한다.

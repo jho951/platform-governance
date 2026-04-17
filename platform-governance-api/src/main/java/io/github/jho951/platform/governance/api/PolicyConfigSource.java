@@ -7,5 +7,12 @@ public interface PolicyConfigSource {
     Optional<String> resolve(String key);
 
     Map<String, String> snapshot();
-}
 
+    default boolean supportsSnapshot() {
+        return true;
+    }
+
+    default boolean isOperational() {
+        return true;
+    }
+}

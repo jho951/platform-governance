@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -33,4 +32,3 @@ class GovernanceRequestTest {
         assertEquals("prod", context.environment());
     }
 }
-

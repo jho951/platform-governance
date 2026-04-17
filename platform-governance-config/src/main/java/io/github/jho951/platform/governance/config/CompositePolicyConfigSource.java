@@ -17,9 +17,7 @@ public final class CompositePolicyConfigSource implements PolicyConfigSource {
     public Optional<String> resolve(String key) {
         for (PolicyConfigSource source : sources) {
             Optional<String> value = source.resolve(key);
-            if (value.isPresent()) {
-                return value;
-            }
+            if (value.isPresent()) return value;
         }
         return Optional.empty();
     }

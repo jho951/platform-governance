@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'io.github.jho951.platform'
-version = findProperty('releaseVersion') ?: '0.1.0-SNAPSHOT'
+version = rootProject.ext.platformReleaseVersion
 
 javaPlatform {
     allowDependencies()
@@ -26,8 +26,6 @@ dependencies {
         api "io.github.jho951:policy-config-contracts:${rootProject.policyConfigVersion}"
         api "io.github.jho951:policy-config-core:${rootProject.policyConfigVersion}"
         api "io.github.jho951:policy-config-builder:${rootProject.policyConfigVersion}"
-        api "io.github.jho951:plugin-policy-engine-api:${rootProject.pluginPolicyEngineVersion}"
-        api "io.github.jho951:plugin-policy-engine-core:${rootProject.pluginPolicyEngineVersion}"
         api "io.github.jho951:plugin-policy-engine-config:${rootProject.pluginPolicyEngineVersion}"
     }
 }

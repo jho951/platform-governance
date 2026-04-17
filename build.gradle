@@ -2,23 +2,33 @@ ext {
     springFrameworkVersion = findProperty('springFrameworkVersion') ?: '6.2.17'
     springBootVersion = findProperty('springBootVersion') ?: '3.5.13'
     junitVersion = findProperty('junitVersion') ?: '5.10.3'
+    assertjVersion = findProperty('assertjVersion') ?: '3.26.3'
     auditLogVersion = findProperty('auditLogVersion') ?: '2.0.0'
     policyConfigVersion = findProperty('policyConfigVersion') ?: '2.0.0'
     pluginPolicyEngineVersion = findProperty('pluginPolicyEngineVersion') ?: '2.0.1'
+    platformReleaseVersion = findProperty('release_version') ?: findProperty('releaseVersion') ?: '0.1.0-SNAPSHOT'
+    jacocoMinimumCoverage = (findProperty('jacocoMinimumCoverage') ?: '0.04') as BigDecimal
 }
 
 allprojects {
     group = 'io.github.jho951.platform'
-    version = findProperty('releaseVersion') ?: '0.1.0-SNAPSHOT'
+    version = rootProject.ext.platformReleaseVersion
 
     repositories {
         mavenCentral()
+    }
+
+    dependencyLocking {
+        lockAllConfigurations()
     }
 }
 
 subprojects {
     if (name != 'platform-governance-bom') {
         apply plugin: 'java-library'
+        apply plugin: 'jacoco'
+        apply plugin: 'checkstyle'
+        apply plugin: 'pmd'
 
         java {
             toolchain {
@@ -35,10 +45,69 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
+        options.compilerArgs += ['-Xlint:all', '-Xlint:-serial']
     }
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        finalizedBy tasks.named('jacocoTestReport')
+    }
+
+    if (name != 'platform-governance-bom') {
+        checkstyle {
+            toolVersion = '10.21.2'
+            configDirectory = rootProject.file('config/checkstyle')
+        }
+
+        pmd {
+            toolVersion = '7.8.0'
+            consoleOutput = true
+            ruleSetFiles = files(rootProject.file('config/pmd/ruleset.xml'))
+            ruleSets = []
+        }
+
+        jacoco {
+            toolVersion = '0.8.12'
+        }
+
+        tasks.withType(Checkstyle).configureEach {
+            reports {
+                xml.required = true
+                html.required = true
+            }
+        }
+
+        tasks.withType(Pmd).configureEach {
+            reports {
+                xml.required = true
+                html.required = true
+            }
+        }
+
+        tasks.named('jacocoTestReport') {
+            dependsOn tasks.named('test')
+            reports {
+                xml.required = true
+                html.required = true
+            }
+        }
+
+        tasks.named('jacocoTestCoverageVerification') {
+            dependsOn tasks.named('test')
+            violationRules {
+                rule {
+                    limit {
+                        minimum = rootProject.ext.jacocoMinimumCoverage
+                    }
+                }
+            }
+        }
+
+        if (file('src/test/java').exists()) {
+            tasks.named('check') {
+                dependsOn tasks.named('jacocoTestCoverageVerification')
+            }
+        }
     }
 
     if (name != 'platform-governance-bom') {

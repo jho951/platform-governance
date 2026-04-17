@@ -2,23 +2,30 @@
 
 ## 역할
 
-- `platform-governance-api`: 요청, context, verdict, audit, config 계약
+- `platform-governance-api`: 요청, context, verdict, identity audit, config 계약
 - `platform-governance-bom`: private consumer용 dependency constraints
 - `platform-governance-audit`: `audit-log` 기반 audit recorder adapter
 - `platform-governance-config`: `policy-config` 기반 config source adapter
 - `platform-governance-core`: platform 공통 정책 서비스
-- `platform-governance-engine`: `plugin-policy-engine` 기반 평가 엔진
-- `platform-governance-spring`: Spring boot auto-configuration
+- `platform-governance-engine`: platform `GovernancePolicyPlugin` chain 기반 평가 엔진
+- `platform-governance-spring`: Spring boot auto-configuration과 운영 fail-fast 검증
 - `platform-governance-spring-boot-starter`: starter 진입점
 - `platform-governance-common-test`: 테스트 픽스처와 샘플
+
+`platform-governance-spring`은 `service-role-preset`도 적용한다. preset은 3계층 서비스 이름을 보지 않고, identity/policy/resource/observability 같은 주 역할만 사용한다.
 
 ## 조합 규칙
 
 - core는 순수 Java 로직만 담는다.
 - bom은 2계층 platform 모듈과 1계층 OSS exact version을 고정한다.
 - audit/config/engine은 1계층 OSS별 adapter와 조립 로직을 분리해 담는다.
+- identity audit 계약은 2계층 API로 제공하고, sink/delivery는 1계층 `audit-log`를 사용한다.
 - spring은 빈 등록만 담당한다.
 - starter는 Spring 의존성을 모은다.
 - common-test는 테스트 데이터와 fixture를 제공한다.
 - 1계층 기능은 `project()`가 아니라 Maven Central published artifact로 소비한다.
+- 3계층 서비스는 starter와 설정 값만 소비하며 1계층 OSS를 직접 조립하지 않는다.
+- 서비스별 차이가 필요한 부분은 설정 또는 조건부 bean으로 override 가능하게 둔다.
+- 정책 변경 기록과 위반 대응은 api 계약과 audit 기반 기본 구현을 통해 제공한다.
+- 운영 위험 설정 검증은 spring 모듈에서 수행한다.
 - 2계층 모듈은 GitHub Packages private Maven registry로 배포한다.

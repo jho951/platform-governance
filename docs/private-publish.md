@@ -29,7 +29,7 @@ git push origin v1.0.0
 workflow는 tag에서 version을 계산한다.
 
 ```text
-v1.0.0 -> releaseVersion=1.0.0
+v1.0.0 -> release_version=1.0.0
 ```
 
 필수 workflow 권한:
@@ -51,7 +51,7 @@ GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
 ```bash
 ./gradlew clean test publish \
-  -PreleaseVersion="${VERSION}" \
+  -Prelease_version="${VERSION}" \
   -PgithubPackagesUrl="https://maven.pkg.github.com/jho951/platform-governance" \
   -PgithubPackagesUsername="${GITHUB_ACTOR}" \
   -PgithubPackagesToken="${GITHUB_TOKEN}"
@@ -66,7 +66,7 @@ export GITHUB_ACTOR=jho951
 export GITHUB_TOKEN=<write:packages 권한이 있는 PAT>
 
 ./gradlew clean test publish \
-  -PreleaseVersion=1.0.0 \
+  -Prelease_version=1.0.0 \
   -PgithubPackagesUrl=https://maven.pkg.github.com/jho951/platform-governance \
   -PgithubPackagesUsername="$GITHUB_ACTOR" \
   -PgithubPackagesToken="$GITHUB_TOKEN"
@@ -118,7 +118,7 @@ workflow:
 
 ```yaml
 env:
-  GITHUB_ACTOR: jho951
+  GITHUB_ACTOR: ${{ github.actor }}
   GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 ```
 

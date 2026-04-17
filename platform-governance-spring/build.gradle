@@ -17,6 +17,8 @@ dependencies {
 
     testImplementation "org.springframework:spring-context:${rootProject.springFrameworkVersion}"
     testImplementation "org.springframework.boot:spring-boot-autoconfigure:${rootProject.springBootVersion}"
+    testImplementation "org.springframework.boot:spring-boot-test:${rootProject.springBootVersion}"
+    testImplementation "org.assertj:assertj-core:${rootProject.assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter-api:${rootProject.junitVersion}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${rootProject.junitVersion}"
 }

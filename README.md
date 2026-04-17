@@ -1,13 +1,45 @@
 # platform-governance
 
-`platform-governance`는 `audit-log`, `policy-config`, `plugin-policy-engine`를 조립하는 2계층 governance platform이다.
-내부 구현은 1계층 OSS의 Maven Central 배포본을 소비하는 기준으로 유지한다.
+`platform-governance`는 `audit-log`, `policy-config`, platform plugin chain, plugin-policy-engine config를 조립해 감사, 정책 조회, 정책 평가, 정책 변경 기록, 위반 대응을 표준화하는 2계층 운영 통제 계층이다.
+내부 구현은 1계층 OSS의 Maven Central 배포본을 소비하는 기준으로 유지하며, 서비스 서버인 3계층이 1계층 OSS를 직접 조립하지 않도록 한다.
 
 ## 역할
 
 - 구조화 감사
+- identity audit 표준 API와 이벤트 taxonomy
 - 정책 설정 조회
 - 정책 평가 엔진
+- 정책 변경 기록
+- 위반 대응 실행
+- 운영 위험 설정 fail-fast 검증
+- 서비스 역할 preset 기반 운영 기본값 보강
+
+Auth-server 같은 3계층 identity 서비스는 범용 audit entry를 직접 만들지 않고 `IdentityAuditRecorder`로 사건만 알린다.
+`platform-governance`는 schema, required field validation, correlation, redaction, sink delivery 위임, 운영 fail-fast를 처리한다.
+
+## 서비스 역할 preset
+
+3계층 서비스는 `platform.governance.service-role-preset`으로 governance 주 역할을 선언할 수 있다.
+
+| Preset | 주 대상 |
+| --- | --- |
+| `IDENTITY_SERVICE` | auth-server |
+| `POLICY_DECISION_SERVICE` | authz-server |
+| `RESOURCE_SERVICE` | user-server, block-server |
+| `OBSERVABILITY_SERVICE` | monitor-server |
+| `GENERAL` | 직접 설정 |
+
+Preset은 사용자가 명시한 설정을 덮어쓰지 않고, 비어 있는 운영 기본값만 보강한다.
+
+## 제공하지 않는 것
+
+- 특정 서비스의 승인/반려 업무 규칙
+- 특정 도메인 리소스 권한 판단
+- 특정 서비스 정책 key 하드코딩
+- 특정 DB/Redis key 규칙 강제
+- 특정 서비스 이벤트 이름 강제
+- 1계층 `audit-log`의 `AuditSink`, `AuditLogger`, delivery primitive 재구현
+- 1계층 OSS 내부 의미 재정의
 
 ## 모듈
 
@@ -23,16 +55,20 @@
 
 ## 핵심 원칙
 
-- 1계층 OSS의 Maven Central 배포본을 조합한다.
+- 3계층 서비스는 1계층 OSS를 직접 조립하지 않는다.
+- 2계층 `platform-governance`는 공통 운영정책의 실행 골격을 제공한다.
+- 3계층 서비스는 자기 서비스에 필요한 정책 값만 선언한다.
+- 정말 전사 공통인 불변 규칙만 2계층에서 강제한다.
+- 서비스 차이가 필요한 부분은 override 가능하게 둔다.
+- 정책 변경과 위반 대응은 2계층 표준 계약으로 처리한다.
 - 2계층 `platform-governance`는 GitHub Packages private package로 배포한다.
 - `service-contract`와 호환되는 거버넌스 경계만 제공한다.
-- platform 내부에서 1계층 상세 구현을 다시 정의하지 않는다.
 
 ## 소비 모듈 기준
 
 - `audit-log` 계열은 `io.github.jho951:audit-log-api:2.0.0`, `io.github.jho951:audit-log-core:2.0.0` 배포 묶음을 기준으로 사용한다.
 - `policy-config` 계열은 `io.github.jho951:policy-config-contracts:2.0.0`, `io.github.jho951:policy-config-core:2.0.0`, `io.github.jho951:policy-config-builder:2.0.0` 배포 묶음을 기준으로 사용한다.
-- `plugin-policy-engine` 계열은 `io.github.jho951:plugin-policy-engine-api:2.0.1`, `io.github.jho951:plugin-policy-engine-config:2.0.1`, `io.github.jho951:plugin-policy-engine-core:2.0.1` 배포 묶음을 기준으로 사용한다.
+- `plugin-policy-engine` 계열은 feature flag 설정 bean 제공에 필요한 `io.github.jho951:plugin-policy-engine-config:2.0.1` 배포본을 기준으로 사용한다.
 
 ## 빌드
 
@@ -47,6 +83,17 @@ dependencies {
     implementation platform("io.github.jho951.platform:platform-governance-bom:1.0.0")
     implementation "io.github.jho951.platform:platform-governance-spring-boot-starter"
 }
+```
+
+예:
+
+```yaml
+platform:
+  governance:
+    service-role-preset: identity-service
+    audit:
+      service-name: auth-server
+      environment: prod
 ```
 
 로컬 1계층 소스로 사전 검증할 때만 다음 옵션을 사용한다.
