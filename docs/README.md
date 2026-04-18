@@ -2,7 +2,7 @@
 
 ## 핵심 기준
 
-- 2계층은 audit, policy config, plugin policy engine, violation handling을 조립한다.
+- 2계층은 audit, policy config, platform `GovernancePolicyPlugin` chain, plugin-policy-engine config 기준, violation handling을 조립한다.
 - 3계층은 서비스 정책 key, 정책 값, domain plugin, audit sink를 제공한다.
 - 3계층 기본 진입점은 `platform-governance-bom` + `platform-governance-starter`다.
 - `service-role-preset`은 서비스 이름이 아니라 governance 주 역할을 표현한다.

@@ -1,6 +1,6 @@
 # Architecture
 
-`platform-governance`는 audit, policy config, policy engine 조합을 서비스 서버가 소비하는 거버넌스 기반으로 제공한다.
+`platform-governance`는 audit, policy config, platform policy engine 조합을 서비스 서버가 소비하는 거버넌스 기반으로 제공한다.
 내부 구현은 의존성 경계로 나누되, 3계층 서비스 서버는 단일 starter와 설정만 소비하는 2계층 실행 골격이다.
 범위는 감사, 정책 조회, 정책 평가, 정책 변경 기록, 위반 대응을 위한 API/SPI, runtime 조립, 운영 guard다.
 
@@ -23,7 +23,11 @@
 
 - `audit-log`
 - `policy-config`
+- platform `GovernancePolicyPlugin` chain
 - `plugin-policy-engine-config`
+
+`plugin-policy-engine-config`는 feature flag/config 호환과 BOM 정렬을 위한 기준이다.
+현재 정책 실행 엔진은 `platform-governance-engine`의 `GovernancePolicyPlugin` chain이며, `plugin-policy-engine` 전체 runtime을 흡수 대상으로 보지 않는다.
 
 ## 책임 경계
 
@@ -42,6 +46,7 @@
 - 서비스 역할 preset 기반 운영 기본값 보강
 - 서비스별 차이는 SPI/bean override로 개방
 - 자체 controller, 자체 DB, 운영자 workflow의 최종 소유권은 갖지 않음
+- 외부 `plugin-policy-engine` API/engine runtime을 platform engine으로 재정의하지 않음
 
 3계층 서비스가 담당한다.
 

@@ -77,7 +77,7 @@ platform:
 - identity audit는 `IdentityAuditRecorder` 공개 API를 제공하고 내부에서 audit library의 `AuditLogger`로 매핑한다.
 - `MdcAuditContextResolver`가 MDC의 `traceId`, `requestId`, `clientIp`, `userAgent`를 기본 correlation 값으로 연결한다.
 - policy config는 `policy-config`의 `PolicyResolver` 기반 기본 소스를 제공한다.
-- plugin policy engine 설정은 `FeatureFlagClient` 기본 bean을 제공할 때 사용한다.
+- `plugin-policy-engine` 설정은 `FeatureFlagClient` 기본 bean을 제공하기 위한 config 호환 기준으로 사용한다.
 - governance decision engine은 기본적으로 등록된 `GovernancePolicyPlugin`을 bean 순서대로 순회한다.
 - 정말 전사 공통인 불변 규칙만 기본 강제로 둔다.
 - 서비스별 차이가 필요한 값은 `platform.governance.*` 설정 또는 서비스가 등록한 bean으로 override한다.

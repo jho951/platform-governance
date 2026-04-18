@@ -16,6 +16,12 @@
 - `policy-config`: `io.github.jho951:policy-config-contracts:2.0.0`, `io.github.jho951:policy-config-core:2.0.0`, `io.github.jho951:policy-config-builder:2.0.0`
 - `plugin-policy-engine`: `io.github.jho951:plugin-policy-engine-config:2.0.1`
 
+## plugin-policy-engine 경계
+
+`plugin-policy-engine`은 실행 엔진 흡수 대상이 아니다.
+현재 실행 엔진은 platform `GovernancePolicyPlugin` chain이고, `plugin-policy-engine` 계열은 feature flag/config 호환 기준과 BOM 정렬 좌표로만 사용한다.
+외부 `plugin-policy-engine` API adapter가 필요해지면 별도 adapter 모듈과 전환 정책을 추가한 뒤 이 문서를 갱신한다.
+
 ## 적용 원칙
 
 - `audit`, `config`, `engine`은 adapter와 조립 로직을 분리해 가진다. 현재 engine은 platform `GovernancePolicyPlugin` chain이고, 외부 `plugin-policy-engine` API adapter는 아니다.
