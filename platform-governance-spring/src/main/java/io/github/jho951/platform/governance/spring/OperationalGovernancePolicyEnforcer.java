@@ -1,20 +1,19 @@
 package io.github.jho951.platform.governance.spring;
 
 import io.github.jho951.platform.governance.api.AuditFailurePolicy;
+import io.github.jho951.platform.governance.api.OperationalProfileResolver;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 import io.github.jho951.platform.governance.api.ViolationAction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class OperationalGovernancePolicyEnforcer {
     private final PlatformGovernanceProperties properties;
     private final PolicyConfigSource policyConfigSource;
+    private final OperationalProfileResolver operationalProfileResolver;
     private final List<String> activeProfiles;
     private final int auditSinkCount;
     private final int auditContextResolverCount;
@@ -35,8 +34,27 @@ public final class OperationalGovernancePolicyEnforcer {
             int auditSinkCount,
             int auditContextResolverCount
     ) {
+        this(
+                properties,
+                policyConfigSource,
+                OperationalProfileResolver.standard(),
+                activeProfiles,
+                auditSinkCount,
+                auditContextResolverCount
+        );
+    }
+
+    public OperationalGovernancePolicyEnforcer(
+            PlatformGovernanceProperties properties,
+            PolicyConfigSource policyConfigSource,
+            OperationalProfileResolver operationalProfileResolver,
+            String[] activeProfiles,
+            int auditSinkCount,
+            int auditContextResolverCount
+    ) {
         this.properties = Objects.requireNonNull(properties, "properties");
         this.policyConfigSource = Objects.requireNonNull(policyConfigSource, "policyConfigSource");
+        this.operationalProfileResolver = Objects.requireNonNull(operationalProfileResolver, "operationalProfileResolver");
         this.activeProfiles = activeProfiles == null ? List.of() : Arrays.asList(activeProfiles);
         this.auditSinkCount = Math.max(0, auditSinkCount);
         this.auditContextResolverCount = Math.max(0, auditContextResolverCount);
@@ -52,7 +70,9 @@ public final class OperationalGovernancePolicyEnforcer {
             return;
         }
 
-        if (isProductionProfileActive(operational)) {
+        validateRuntimeProfileConsistency(violations);
+
+        if (isProductionProfileActive()) {
             validateProductionSafety(operational, violations);
         }
 
@@ -63,6 +83,25 @@ public final class OperationalGovernancePolicyEnforcer {
         if (!violations.isEmpty()) {
             throw new IllegalStateException("Invalid platform.governance operational configuration: " + String.join("; ", violations));
         }
+    }
+
+    private void validateRuntimeProfileConsistency(List<String> violations) {
+        String auditEnvironment = properties.getAudit().getEnvironment();
+        if (isBlank(auditEnvironment) || activeProfiles.isEmpty()) {
+            return;
+        }
+        boolean environmentIsProduction = operationalProfileResolver.isProduction(
+                List.of(auditEnvironment),
+                properties.getOperational().getProductionProfiles()
+        );
+        if (isProductionProfileActive() != environmentIsProduction) {
+            violations.add("audit.environment=" + auditEnvironment + " conflicts with active profiles "
+                    + activeProfiles);
+        }
+    }
+
+    private boolean isProductionProfileActive() {
+        return operationalProfileResolver.isProduction(activeProfiles, properties.getOperational().getProductionProfiles());
     }
 
     private void validateAlways(List<String> violations) {
@@ -121,15 +160,6 @@ public final class OperationalGovernancePolicyEnforcer {
                 && !properties.getViolation().isHandlerFailureFatal()) {
             violations.add("violation.handler-failure-fatal=false is not allowed in production profiles");
         }
-    }
-
-    private boolean isProductionProfileActive(PlatformGovernanceProperties.Operational operational) {
-        Set<String> productionProfiles = operational.getProductionProfiles().stream()
-                .map(profile -> profile.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
-        return activeProfiles.stream()
-                .map(profile -> profile.toLowerCase(Locale.ROOT))
-                .anyMatch(productionProfiles::contains);
     }
 
     private static boolean isWeakViolationResponse(ViolationAction action) {

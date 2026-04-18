@@ -7,8 +7,9 @@ include 'platform-governance-config'
 include 'platform-governance-core'
 include 'platform-governance-engine'
 include 'platform-governance-spring'
-include 'platform-governance-spring-boot-starter'
+include 'platform-governance-starter'
 include 'platform-governance-common-test'
+include 'platform-governance-samples'
 
 def layer1Roots = [
         [path: file('../../module/audit-log'), substitutions: [

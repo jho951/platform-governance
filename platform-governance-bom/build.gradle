@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'io.github.jho951.platform'
-version = rootProject.ext.platformReleaseVersion
+version = rootProject.property('platformReleaseVersion')
 
 javaPlatform {
     allowDependencies()
@@ -18,7 +18,7 @@ dependencies {
         api project(':platform-governance-core')
         api project(':platform-governance-engine')
         api project(':platform-governance-spring')
-        api project(':platform-governance-spring-boot-starter')
+        api project(':platform-governance-starter')
         api project(':platform-governance-common-test')
 
         api "io.github.jho951:audit-log-api:${rootProject.auditLogVersion}"
@@ -48,8 +48,12 @@ publishing {
                 name = 'GitHubPackages'
                 url = uri(project.property('githubPackagesUrl'))
                 credentials {
-                    username = project.findProperty('githubPackagesUsername') ?: System.getenv('GITHUB_ACTOR')
-                    password = project.findProperty('githubPackagesToken') ?: System.getenv('GITHUB_TOKEN')
+                    username = providers.gradleProperty('githubPackagesUsername')
+                            .orElse(providers.environmentVariable('GITHUB_ACTOR'))
+                            .getOrNull()
+                    password = providers.gradleProperty('githubPackagesToken')
+                            .orElse(providers.environmentVariable('GITHUB_TOKEN'))
+                            .getOrNull()
                 }
             }
         }

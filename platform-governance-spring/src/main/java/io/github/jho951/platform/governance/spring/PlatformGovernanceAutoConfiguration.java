@@ -24,10 +24,12 @@ import io.github.jho951.platform.governance.api.GovernanceVerdict;
 import io.github.jho951.platform.governance.api.PolicyEvidence;
 import io.github.jho951.platform.governance.api.PolicyChangeRecorder;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
+import io.github.jho951.platform.governance.api.OperationalProfileResolver;
 import io.github.jho951.platform.governance.api.ViolationHandler;
 import io.github.jho951.platform.governance.audit.AuditLoggerAuditLogRecorder;
 import io.github.jho951.platform.governance.audit.AuditPolicyChangeRecorder;
 import io.github.jho951.platform.governance.audit.AuditViolationHandler;
+import io.github.jho951.platform.governance.audit.CompositeAuditLogRecorder;
 import io.github.jho951.platform.governance.audit.DefaultIdentityAuditRecorder;
 import io.github.jho951.platform.governance.audit.IdentityAuditEventValidator;
 import io.github.jho951.platform.governance.audit.InMemoryAuditLogRecorder;
@@ -41,6 +43,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.env.Environment;
 import org.springframework.context.annotation.Bean;
@@ -94,16 +97,24 @@ public class PlatformGovernanceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public OperationalProfileResolver operationalProfileResolver() {
+        return OperationalProfileResolver.standard();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public OperationalGovernancePolicyEnforcer operationalGovernancePolicyEnforcer(
             PlatformGovernanceProperties properties,
             PolicyConfigSource policyConfigSource,
             org.springframework.beans.factory.ObjectProvider<AuditSink> auditSinks,
             org.springframework.beans.factory.ObjectProvider<AuditContextResolver> contextResolvers,
+            OperationalProfileResolver operationalProfileResolver,
             Environment environment
     ) {
         OperationalGovernancePolicyEnforcer enforcer = new OperationalGovernancePolicyEnforcer(
                 properties,
                 policyConfigSource,
+                operationalProfileResolver,
                 environment.getActiveProfiles(),
                 auditSinks.orderedStream().toList().size(),
                 contextResolvers.orderedStream().toList().size()
@@ -143,9 +154,12 @@ public class PlatformGovernanceAutoConfiguration {
         return new DefaultAuditLogger(sink, contextResolvers.orderedStream().toList(), maskingPolicy.getIfAvailable());
     }
 
-    @Bean
-    @ConditionalOnMissingBean(AuditLogRecorder.class)
-    public AuditLogRecorder auditLogRecorder(PlatformGovernanceProperties properties, org.springframework.beans.factory.ObjectProvider<AuditLogger> auditLogger) {
+    @Bean(name = "platformGovernanceCoreAuditLogRecorder")
+    @ConditionalOnMissingBean(name = "platformGovernanceCoreAuditLogRecorder")
+    public AuditLogRecorder platformGovernanceCoreAuditLogRecorder(
+            PlatformGovernanceProperties properties,
+            org.springframework.beans.factory.ObjectProvider<AuditLogger> auditLogger
+    ) {
         if (!properties.getAudit().isEnabled()) {
             return entry -> { };
         }
@@ -157,6 +171,20 @@ public class PlatformGovernanceAutoConfiguration {
             delegate = new InMemoryAuditLogRecorder();
         }
         return new SanitizingAuditLogRecorder(delegate, serviceAuditAttributes(properties));
+    }
+
+    @Bean(name = "platformGovernanceAuditLogRecorder")
+    @Primary
+    public AuditLogRecorder auditLogRecorder(
+            @Qualifier("platformGovernanceCoreAuditLogRecorder") AuditLogRecorder platformRecorder,
+            org.springframework.beans.factory.ObjectProvider<AuditLogRecorder> auditLogRecorders
+    ) {
+        List<AuditLogRecorder> recorders = new java.util.ArrayList<>();
+        recorders.add(platformRecorder);
+        auditLogRecorders.orderedStream()
+                .filter(recorder -> recorder != platformRecorder)
+                .forEach(recorders::add);
+        return recorders.size() == 1 ? platformRecorder : new CompositeAuditLogRecorder(recorders);
     }
 
     @Bean

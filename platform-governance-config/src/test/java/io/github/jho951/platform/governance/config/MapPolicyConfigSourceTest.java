@@ -13,4 +13,11 @@ class MapPolicyConfigSourceTest {
 
         assertEquals("true", source.resolve("feature.review.required").orElseThrow());
     }
+
+    @Test
+    void emptyMapSourceIsNotOperational() {
+        MapPolicyConfigSource source = new MapPolicyConfigSource(Map.of());
+
+        assertEquals(false, source.isOperational());
+    }
 }

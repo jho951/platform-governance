@@ -1,7 +1,7 @@
 # Architecture
 
-`platform-governance`는 1계층 governance OSS를 조립해 서비스 서버가 소비하는 거버넌스 기반을 제공한다.
-실제 구현은 Maven Central에 배포된 1계층 OSS를 기준으로 조립하며, 3계층 서비스 서버가 1계층 OSS를 직접 조립하지 않게 하는 2계층 실행 골격이다.
+`platform-governance`는 audit, policy config, policy engine 조합을 서비스 서버가 소비하는 거버넌스 기반으로 제공한다.
+내부 구현은 의존성 경계로 나누되, 3계층 서비스 서버는 단일 starter와 설정만 소비하는 2계층 실행 골격이다.
 범위는 감사, 정책 조회, 정책 평가, 정책 변경 기록, 위반 대응을 위한 API/SPI, runtime 조립, 운영 guard다.
 
 이 문서의 계층은 전통적인 n-tier가 아니라 `primitive / platform runtime / deployable service` 분류다. `platform-governance`는 플랫폼 성격을 가지지만 2계층 runtime이다. 자체 endpoint, 자체 DB, 운영자용 publish/revoke/history workflow의 최종 owner가 되면 그 컴포넌트는 별도 3계층 서비스로 분류한다.
@@ -15,8 +15,9 @@
 - `platform-governance-core`: 공통 정책 서비스
 - `platform-governance-engine`: platform `GovernancePolicyPlugin` chain 기반 평가 엔진
 - `platform-governance-spring`: Spring 자동 구성
-- `platform-governance-spring-boot-starter`: 진입점
+- `platform-governance-starter`: 3계층 공식 Spring Boot 진입점
 - `platform-governance-common-test`: 테스트 픽스처
+- `platform-governance-samples`: 배포 제외 smoke test/소비 예제
 
 ## 조립 대상
 
@@ -53,7 +54,7 @@
 - 정책 publish/revoke/history가 업무 의미를 가지면 해당 workflow의 최종 소유권
 - 별도 `Governance-server`가 생기는 경우 그 서버의 endpoint, DB, 운영자 관리 기능
 
-Auth-server 같은 identity 서비스는 `IdentityAuditRecorder`로 표준 action을 호출하고, 2계층이 이를 1계층 `audit-log`의 `AuditLogger` 이벤트로 변환한다.
+Auth-server 같은 identity 서비스는 `IdentityAuditRecorder`로 표준 action을 호출하고, 2계층이 이를 audit library의 `AuditLogger` 이벤트로 변환한다.
 
 ## 서비스 역할 preset
 
@@ -71,16 +72,16 @@ Preset은 서비스 이름을 알지 않는다. `auth-server`, `authz-server`, `
 ## 원칙
 
 - platform은 private 레포다.
-- 3계층 서비스는 1계층 OSS를 직접 조립하지 않는다.
-- 2계층 platform은 1계층 OSS의 Maven Central 배포본을 기준으로 공통 운영정책의 실행 골격을 제공한다.
+- 3계층 서비스는 audit/config/engine library를 직접 조립하지 않는다.
+- 2계층 platform은 공통 운영정책의 실행 골격을 제공한다.
 - 3계층 서비스는 자기 서비스에 필요한 정책 값만 선언한다.
 - 정말 전사 공통인 불변 규칙만 2계층에서 강제한다.
 - 서비스 차이가 필요한 부분은 override 가능하게 둔다.
-- 정책 변경과 위반 대응은 2계층 표준 계약과 기본 구현으로 연결하되, 상태와 운영 workflow의 최종 owner는 3계층에 둔다.
-- role preset은 명시 설정을 덮어쓰지 않고, 비어 있는 운영 기본값만 채운다.
+- 정책 변경과 위반 대응은 2계층 공개 API와 기본 구현으로 연결하되, 상태와 운영 workflow의 최종 owner는 3계층에 둔다.
+- service-role-preset은 명시 설정을 덮어쓰지 않고, 비어 있는 운영 기본값만 채운다.
 - 2계층 artifact는 GitHub Packages private Maven registry로 배포한다.
-- 1계층 OSS의 의미를 다시 정의하지 않는다.
-- 2계층은 범용 `AuditSink`/delivery primitive를 재구현하지 않고 1계층 `audit-log`를 소비한다.
+- 외부 audit/config/engine library의 의미를 다시 정의하지 않는다.
+- 2계층은 범용 `AuditSink`/delivery primitive를 재구현하지 않는다.
 - 서비스 서버는 `service-contract`를 기준으로 이 platform을 소비한다.
 - security와 storage 플랫폼과 직접 구현 의존을 만들지 않는다.
 - `platform-owned`와 `2계층`은 같은 말이 아니다. 플랫폼 소유 서비스라도 deploy되고 상태/workflow를 소유하면 3계층이다.

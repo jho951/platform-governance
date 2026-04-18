@@ -25,4 +25,9 @@ public final class MapPolicyConfigSource implements PolicyConfigSource {
     public Map<String, String> snapshot() {
         return values;
     }
+
+    @Override
+    public boolean isOperational() {
+        return !values.isEmpty();
+    }
 }

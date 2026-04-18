@@ -31,6 +31,16 @@ public final class PolicyResolverPolicyConfigSource implements PolicyConfigSourc
         if (policyResolver instanceof PolicySnapshotProvider snapshotProvider) {
             return snapshotProvider.snapshotValues();
         }
-        return Map.of();
+        throw new IllegalStateException("PolicyResolver does not support policy config snapshot");
+    }
+
+    @Override
+    public boolean supportsSnapshot() {
+        return policyResolver instanceof PolicySnapshotProvider;
+    }
+
+    @Override
+    public boolean isOperational() {
+        return true;
     }
 }

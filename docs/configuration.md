@@ -74,7 +74,7 @@ platform:
 
 - audit는 기본 활성화
 - audit logger는 `audit-log-core`의 기본 구현을 사용하고, 등록된 `AuditSink`가 있으면 fan-out 한다.
-- identity audit는 `IdentityAuditRecorder` 표준 계약을 제공하고 내부에서 1계층 `audit-log`의 `AuditLogger`로 매핑한다.
+- identity audit는 `IdentityAuditRecorder` 공개 API를 제공하고 내부에서 audit library의 `AuditLogger`로 매핑한다.
 - `MdcAuditContextResolver`가 MDC의 `traceId`, `requestId`, `clientIp`, `userAgent`를 기본 correlation 값으로 연결한다.
 - policy config는 `policy-config`의 `PolicyResolver` 기반 기본 소스를 제공한다.
 - plugin policy engine 설정은 `FeatureFlagClient` 기본 bean을 제공할 때 사용한다.
@@ -84,7 +84,7 @@ platform:
 - policy change recorder는 기본적으로 audit에 정책 변경 이벤트를 기록한다.
 - violation handler는 기본적으로 audit에 위반 대응 결과를 기록한다.
 - violation handler 실패는 기본적으로 감사에 남기고 원래 verdict를 유지한다.
-- `prod` profile에서는 운영 위험 설정을 기본 fail-fast로 막는다.
+- `prod` 또는 `production` profile에서는 운영 위험 설정을 기본 fail-fast로 막는다.
 
 ## 운영 fail-fast
 
@@ -100,6 +100,7 @@ platform:
 - 운영 profile에서 `AuditSink` bean이 하나도 없으면 기본적으로 실패한다.
 - 운영 profile에서 `AuditContextResolver` bean이 하나도 없으면 기본적으로 실패한다.
 - 운영 profile에서 `audit.service-name` 또는 `audit.environment`가 없으면 기본적으로 실패한다.
+- active profile과 `audit.environment`의 운영/비운영 의미가 충돌하면 기본적으로 실패한다.
 - 운영 profile에서 `audit.identity.validation-enabled=false`는 기본적으로 실패한다.
 - 운영 profile에서 `audit.failure-policy=IGNORE`는 기본적으로 실패한다.
 - 운영 profile에서 거부 대응 action(`DENY`, `ESCALATE`)을 쓰면 policy config source가 비운영 상태일 때 기본적으로 실패한다.
@@ -160,6 +161,7 @@ platform:
       fail-fast-enabled: true
       production-profiles:
         - prod
+        - production
       allow-audit-disabled-in-production: false
       allow-non-strict-engine-in-production: false
       allow-permissive-violation-action-in-production: false

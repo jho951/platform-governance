@@ -69,7 +69,29 @@ class PlatformGovernanceAutoConfigurationTest {
     @Test
     void auditRecorderExists() {
         AuditLogger auditLogger = configuration.platformGovernanceAuditLogger(emptyProvider(), emptyProvider(), emptyProvider());
-        assertNotNull(configuration.auditLogRecorder(new PlatformGovernanceProperties(), provider(auditLogger)));
+        AuditLogRecorder coreRecorder = configuration.platformGovernanceCoreAuditLogRecorder(
+                new PlatformGovernanceProperties(),
+                provider(auditLogger)
+        );
+
+        assertNotNull(configuration.auditLogRecorder(coreRecorder, provider(coreRecorder)));
+    }
+
+    @Test
+    void auditRecorderFansOutToUserRecorders() {
+        List<String> categories = new ArrayList<>();
+        AuditLogRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
+        AuditLogRecorder userRecorder = entry -> categories.add("user:" + entry.category());
+        AuditLogRecorder recorder = configuration.auditLogRecorder(coreRecorder, provider(userRecorder));
+
+        recorder.record(new AuditEntry(
+                "governance",
+                "policy evaluated",
+                Map.of(),
+                Instant.parse("2026-01-01T00:00:00Z")
+        ));
+
+        assertEquals(List.of("platform:governance", "user:governance"), categories);
     }
 
     @Test
@@ -305,7 +327,7 @@ class PlatformGovernanceAutoConfigurationTest {
         assertTrue(exception.getMessage().contains("AuditSink"));
         assertTrue(exception.getMessage().contains("AuditContextResolver"));
         assertTrue(exception.getMessage().contains("audit.service-name"));
-        assertTrue(exception.getMessage().contains("policy config source snapshot"));
+        assertTrue(exception.getMessage().contains("policy config source must be operational"));
         assertTrue(exception.getMessage().contains("handler-failure-fatal=false"));
     }
 
@@ -398,10 +420,31 @@ class PlatformGovernanceAutoConfigurationTest {
     }
 
     @Test
-    void productionProfileNameIsNotTreatedAsProductionByDefault() {
+    void productionProfileNameIsTreatedAsProductionByDefault() {
         contextRunner
                 .withPropertyValues("spring.profiles.active=production")
-                .run(context -> assertEquals(null, context.getStartupFailure()));
+                .run(context -> {
+                    assertNotNull(context.getStartupFailure());
+                    assertTrue(context.getStartupFailure().getMessage().contains("engine.strict=false"));
+                });
+    }
+
+    @Test
+    void autoConfigurationFailsWhenAuditEnvironmentConflictsWithActiveProfile() {
+        contextRunner
+                .withUserConfiguration(AuditSinkConfiguration.class)
+                .withPropertyValues(
+                        "spring.profiles.active=prod",
+                        "platform.governance.engine.strict=true",
+                        "platform.governance.audit.service-name=auth-service",
+                        "platform.governance.audit.environment=dev",
+                        "platform.governance.policy-config.values.feature.review.required=true",
+                        "platform.governance.violation.handler-failure-fatal=true"
+                )
+                .run(context -> {
+                    assertNotNull(context.getStartupFailure());
+                    assertTrue(context.getStartupFailure().getMessage().contains("audit.environment=dev conflicts"));
+                });
     }
 
     @Test
@@ -465,6 +508,11 @@ class PlatformGovernanceAutoConfigurationTest {
             @Override
             public Map<String, String> snapshot() {
                 return Map.of();
+            }
+
+            @Override
+            public boolean isOperational() {
+                return true;
             }
 
             @Override

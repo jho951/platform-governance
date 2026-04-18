@@ -12,7 +12,10 @@ public interface PolicyConfigSource {
         return true;
     }
 
+    /**
+     * Returns whether this source is safe to use for enforcing policy decisions.
+     */
     default boolean isOperational() {
-        return true;
+        return false;
     }
 }

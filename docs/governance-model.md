@@ -2,7 +2,7 @@
 
 `platform-governance`는 요청 단위로 audit, config resolution, policy engine, violation handling을 평가한다.
 정책 변경은 `PolicyChangeRecorder` 표준 계약으로 기록한다.
-identity 운영 증적은 `IdentityAuditRecorder` 표준 계약으로 기록하고, 내부 구현은 1계층 `audit-log`로 위임한다.
+identity 운영 증적은 `IdentityAuditRecorder` 표준 계약으로 기록하고, 내부 구현은 audit library로 위임한다.
 
 ## 평가 순서
 

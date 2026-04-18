@@ -1,7 +1,7 @@
 # Private Publish And Consumption
 
 `platform-governance`는 private GitHub Packages로 배포한다.
-1계층 OSS는 공개 Maven Central artifact이고, 2계층 `platform-governance`는 내부 서비스용 private package다.
+`platform-governance`는 내부 서비스용 private package다. 외부 audit/config/engine library는 내부 모듈이 소비하고, 3계층은 starter를 소비한다.
 
 ## Publish 대상
 
@@ -14,8 +14,14 @@
 - `platform-governance-core`
 - `platform-governance-engine`
 - `platform-governance-spring`
-- `platform-governance-spring-boot-starter`
+- `platform-governance-starter`
 - `platform-governance-common-test`
+
+배포 제외:
+
+- `platform-governance-samples`
+
+소비 서비스는 `platform-governance-starter`를 공식 진입점으로 사용한다.
 
 ## GitHub Actions publish
 
@@ -29,7 +35,7 @@ git push origin v1.0.0
 workflow는 tag에서 version을 계산한다.
 
 ```text
-v1.0.0 -> release_version=1.0.0
+v1.0.0 -> platformReleaseVersion=1.0.0
 ```
 
 필수 workflow 권한:
@@ -51,7 +57,7 @@ GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
 ```bash
 ./gradlew clean test publish \
-  -Prelease_version="${VERSION}" \
+  -PplatformReleaseVersion="${VERSION}" \
   -PgithubPackagesUrl="https://maven.pkg.github.com/jho951/platform-governance" \
   -PgithubPackagesUsername="${GITHUB_ACTOR}" \
   -PgithubPackagesToken="${GITHUB_TOKEN}"
@@ -66,7 +72,7 @@ export GITHUB_ACTOR=jho951
 export GITHUB_TOKEN=<write:packages 권한이 있는 PAT>
 
 ./gradlew clean test publish \
-  -Prelease_version=1.0.0 \
+  -PplatformReleaseVersion=1.0.0 \
   -PgithubPackagesUrl=https://maven.pkg.github.com/jho951/platform-governance \
   -PgithubPackagesUsername="$GITHUB_ACTOR" \
   -PgithubPackagesToken="$GITHUB_TOKEN"
@@ -88,8 +94,12 @@ repositories {
     maven {
         url = uri("https://maven.pkg.github.com/jho951/platform-governance")
         credentials {
-            username = findProperty("githubPackagesUsername") ?: System.getenv("GITHUB_ACTOR")
-            password = findProperty("githubPackagesToken") ?: System.getenv("GITHUB_TOKEN")
+            username = providers.gradleProperty("githubPackagesUsername")
+                    .orElse(providers.environmentVariable("GITHUB_ACTOR"))
+                    .getOrNull()
+            password = providers.gradleProperty("githubPackagesToken")
+                    .orElse(providers.environmentVariable("GITHUB_TOKEN"))
+                    .getOrNull()
         }
     }
 }
@@ -100,7 +110,7 @@ dependency:
 ```gradle
 dependencies {
     implementation platform("io.github.jho951.platform:platform-governance-bom:1.0.0")
-    implementation "io.github.jho951.platform:platform-governance-spring-boot-starter"
+    implementation "io.github.jho951.platform:platform-governance-starter"
 }
 ```
 

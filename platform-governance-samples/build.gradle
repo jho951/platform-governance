@@ -1,0 +1,9 @@
+dependencies {
+    implementation platform(project(':platform-governance-bom'))
+    implementation project(':platform-governance-starter')
+
+    testImplementation "org.springframework.boot:spring-boot-test:${rootProject.springBootVersion}"
+    testImplementation "org.assertj:assertj-core:${rootProject.assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${rootProject.junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${rootProject.junitVersion}"
+}

@@ -3,4 +3,3 @@ dependencies {
     api "org.springframework:spring-context:${rootProject.springFrameworkVersion}"
     api "org.springframework.boot:spring-boot-autoconfigure:${rootProject.springBootVersion}"
 }
-

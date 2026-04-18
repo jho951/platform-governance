@@ -298,7 +298,7 @@ public class PlatformGovernanceProperties {
 
     public static class Operational {
         private boolean failFastEnabled = true;
-        private Set<String> productionProfiles = new LinkedHashSet<>(Set.of("prod"));
+        private Set<String> productionProfiles = new LinkedHashSet<>(Set.of("prod", "production"));
         private boolean allowAuditDisabledInProduction = false;
         private boolean allowNonStrictEngineInProduction = false;
         private boolean allowPermissiveViolationActionInProduction = false;

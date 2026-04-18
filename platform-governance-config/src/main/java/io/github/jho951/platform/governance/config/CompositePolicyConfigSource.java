@@ -4,13 +4,17 @@ import io.github.jho951.platform.governance.api.PolicyConfigSource;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class CompositePolicyConfigSource implements PolicyConfigSource {
     private final List<PolicyConfigSource> sources;
 
     public CompositePolicyConfigSource(List<PolicyConfigSource> sources) {
-        this.sources = sources == null ? List.of() : List.copyOf(sources);
+        this.sources = sources == null ? List.of() : sources.stream()
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     @Override
@@ -24,9 +28,22 @@ public final class CompositePolicyConfigSource implements PolicyConfigSource {
 
     @Override
     public Map<String, String> snapshot() {
+        if (!supportsSnapshot()) {
+            throw new IllegalStateException("All policy config sources must support snapshots");
+        }
         return sources.stream()
                 .map(PolicyConfigSource::snapshot)
                 .flatMap(map -> map.entrySet().stream())
-                .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, (left, right) -> left));
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, (left, right) -> left));
+    }
+
+    @Override
+    public boolean supportsSnapshot() {
+        return sources.stream().allMatch(PolicyConfigSource::supportsSnapshot);
+    }
+
+    @Override
+    public boolean isOperational() {
+        return !sources.isEmpty() && sources.stream().allMatch(PolicyConfigSource::isOperational);
     }
 }

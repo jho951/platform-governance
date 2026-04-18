@@ -1,18 +1,6 @@
-ext {
-    springFrameworkVersion = findProperty('springFrameworkVersion') ?: '6.2.17'
-    springBootVersion = findProperty('springBootVersion') ?: '3.5.13'
-    junitVersion = findProperty('junitVersion') ?: '5.10.3'
-    assertjVersion = findProperty('assertjVersion') ?: '3.26.3'
-    auditLogVersion = findProperty('auditLogVersion') ?: '2.0.0'
-    policyConfigVersion = findProperty('policyConfigVersion') ?: '2.0.0'
-    pluginPolicyEngineVersion = findProperty('pluginPolicyEngineVersion') ?: '2.0.1'
-    platformReleaseVersion = findProperty('release_version') ?: findProperty('releaseVersion') ?: '0.1.0-SNAPSHOT'
-    jacocoMinimumCoverage = (findProperty('jacocoMinimumCoverage') ?: '0.04') as BigDecimal
-}
-
 allprojects {
     group = 'io.github.jho951.platform'
-    version = rootProject.ext.platformReleaseVersion
+    version = rootProject.property('platformReleaseVersion')
 
     repositories {
         mavenCentral()
@@ -24,6 +12,8 @@ allprojects {
 }
 
 subprojects {
+    def sampleProject = path == ':platform-governance-samples'
+
     if (name != 'platform-governance-bom') {
         apply plugin: 'java-library'
         apply plugin: 'jacoco'
@@ -40,6 +30,12 @@ subprojects {
     }
 
     if (name != 'platform-governance-bom') {
+        dependencies {
+            testRuntimeOnly "org.junit.platform:junit-platform-launcher:${rootProject.junitPlatformVersion}"
+        }
+    }
+
+    if (name != 'platform-governance-bom' && !sampleProject) {
         apply plugin: 'maven-publish'
     }
 
@@ -97,7 +93,7 @@ subprojects {
             violationRules {
                 rule {
                     limit {
-                        minimum = rootProject.ext.jacocoMinimumCoverage
+                        minimum = rootProject.property('jacocoMinimumCoverage') as BigDecimal
                     }
                 }
             }
@@ -110,7 +106,7 @@ subprojects {
         }
     }
 
-    if (name != 'platform-governance-bom') {
+    if (name != 'platform-governance-bom' && !sampleProject) {
         publishing {
             publications {
                 mavenJava(MavenPublication) {
@@ -129,8 +125,12 @@ subprojects {
                         name = 'GitHubPackages'
                         url = uri(project.property('githubPackagesUrl'))
                         credentials {
-                            username = project.findProperty('githubPackagesUsername') ?: System.getenv('GITHUB_ACTOR')
-                            password = project.findProperty('githubPackagesToken') ?: System.getenv('GITHUB_TOKEN')
+                            username = providers.gradleProperty('githubPackagesUsername')
+                                    .orElse(providers.environmentVariable('GITHUB_ACTOR'))
+                                    .getOrNull()
+                            password = providers.gradleProperty('githubPackagesToken')
+                                    .orElse(providers.environmentVariable('GITHUB_TOKEN'))
+                                    .getOrNull()
                         }
                     }
                 }
