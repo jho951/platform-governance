@@ -1,5 +1,6 @@
 package io.github.jho951.platform.governance.config;
 
+import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 
 import java.util.List;
@@ -43,7 +44,23 @@ public final class CompositePolicyConfigSource implements PolicyConfigSource {
     }
 
     @Override
+    @Deprecated(since = "2.0.1", forRemoval = true)
+    @SuppressWarnings("removal")
     public boolean isOperational() {
-        return !sources.isEmpty() && sources.stream().allMatch(PolicyConfigSource::isOperational);
+        return operationalStatus().isOperational();
+    }
+
+    @Override
+    public PolicyConfigOperationalStatus operationalStatus() {
+        if (sources.isEmpty()) {
+            return PolicyConfigOperationalStatus.notConfigured("no policy config sources configured");
+        }
+        for (PolicyConfigSource source : sources) {
+            PolicyConfigOperationalStatus status = source.operationalStatus();
+            if (!status.isOperational()) {
+                return status;
+            }
+        }
+        return PolicyConfigOperationalStatus.operational("all policy config sources are operational");
     }
 }

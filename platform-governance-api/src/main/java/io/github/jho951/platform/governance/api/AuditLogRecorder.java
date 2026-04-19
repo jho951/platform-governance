@@ -1,6 +1,13 @@
 package io.github.jho951.platform.governance.api;
 
+/**
+ * Internal audit-recording adapter used by governance components.
+ *
+ * <p>For production delivery, Spring consumers should register audit-log
+ * {@code AuditSink} beans. This adapter exists to bridge platform governance
+ * events into the audit pipeline and to support tests or specialized
+ * composition.</p>
+ */
 public interface AuditLogRecorder {
     void record(AuditEntry entry);
 }
-

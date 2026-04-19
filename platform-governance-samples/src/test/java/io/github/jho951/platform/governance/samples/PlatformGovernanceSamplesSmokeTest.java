@@ -5,6 +5,7 @@ import io.github.jho951.platform.governance.api.GovernanceContext;
 import io.github.jho951.platform.governance.api.GovernancePolicyPlugin;
 import io.github.jho951.platform.governance.api.GovernanceRequest;
 import io.github.jho951.platform.governance.api.GovernanceVerdict;
+import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 import io.github.jho951.platform.governance.spring.PlatformGovernanceAutoConfiguration;
 import io.github.jho951.platform.governance.spring.PlatformGovernanceProperties;
@@ -68,8 +69,11 @@ class PlatformGovernanceSamplesSmokeTest {
         }
 
         @Override
-        public boolean isOperational() {
-            return !values.isEmpty();
+        public PolicyConfigOperationalStatus operationalStatus() {
+            if (values.isEmpty()) {
+                return PolicyConfigOperationalStatus.notConfigured("fixture policy config is empty");
+            }
+            return PolicyConfigOperationalStatus.operational("fixture policy config has values");
         }
     }
 

@@ -9,12 +9,16 @@ import io.github.jho951.platform.governance.api.GovernanceRequest;
 import io.github.jho951.platform.governance.api.GovernanceVerdict;
 
 import java.util.List;
-import java.util.Objects;
 
+/**
+ * @deprecated since 2.0.1. Use {@link PluginGovernanceDecisionEngine} as the
+ * decision engine and let the Spring platform wrapper expose
+ * {@link GovernancePolicyService}. This compatibility adapter will be removed
+ * in 3.0.0.
+ */
+@Deprecated(since = "2.0.1", forRemoval = true)
 public final class PluginGovernancePolicyEngine implements GovernancePolicyService, GovernanceDecisionEngine {
-    private final List<GovernancePolicyPlugin> plugins;
-    private final boolean strict;
-    private final GovernanceEngineFailurePolicy failurePolicy;
+    private final PluginGovernanceDecisionEngine delegate;
 
     public PluginGovernancePolicyEngine(List<GovernancePolicyPlugin> plugins, boolean strict) {
         this(plugins, strict, GovernanceEngineFailurePolicy.FAIL_CLOSED);
@@ -25,44 +29,11 @@ public final class PluginGovernancePolicyEngine implements GovernancePolicyServi
             boolean strict,
             GovernanceEngineFailurePolicy failurePolicy
     ) {
-        this.plugins = plugins == null ? List.of() : List.copyOf(plugins);
-        this.strict = strict;
-        this.failurePolicy = failurePolicy == null ? GovernanceEngineFailurePolicy.FAIL_CLOSED : failurePolicy;
+        this.delegate = new PluginGovernanceDecisionEngine(plugins, strict, failurePolicy);
     }
 
     @Override
     public GovernanceVerdict evaluate(GovernanceRequest request, GovernanceContext context) {
-        Objects.requireNonNull(request, "request");
-        Objects.requireNonNull(context, "context");
-
-        boolean matched = false;
-        for (GovernancePolicyPlugin plugin : plugins) {
-            try {
-                if (!plugin.supports(request, context)) {
-                    continue;
-                }
-                matched = true;
-                GovernanceVerdict verdict = plugin.evaluate(request, context);
-                if (!verdict.allowed()) {
-                    return verdict;
-                }
-            } catch (RuntimeException exception) {
-                return handlePluginFailure(plugin, exception);
-            }
-        }
-
-        if (!matched && strict) {
-            return GovernanceVerdict.deny("plugin-engine", "no matching plugin");
-        }
-        return GovernanceVerdict.allow("plugin-engine", matched ? "all matching plugins passed" : "no plugin matched");
-    }
-
-    private GovernanceVerdict handlePluginFailure(GovernancePolicyPlugin plugin, RuntimeException exception) {
-        String pluginName = plugin == null ? "unknown" : plugin.name();
-        String reason = "plugin threw exception: " + exception.getClass().getName();
-        if (failurePolicy == GovernanceEngineFailurePolicy.FAIL_OPEN) {
-            return GovernanceVerdict.allow(pluginName, reason);
-        }
-        return GovernanceVerdict.deny(pluginName, reason);
+        return delegate.evaluate(request, context);
     }
 }

@@ -25,13 +25,15 @@
 
 운영 profile에서 `violation.action=DENY` 또는 `ESCALATE`인데 policy config source가 비운영 상태이면 기본적으로 시작에 실패한다.
 source가 snapshot을 지원하고 snapshot이 비어 있어도 기본적으로 시작에 실패한다.
-lazy/remote source처럼 snapshot 없이 key resolve가 가능한 구현은 `supportsSnapshot=false`, `isOperational=true`로 capability를 분리한다.
+lazy/remote source처럼 snapshot 없이 key resolve가 가능한 구현은 `supportsSnapshot=false`, `operationalStatus=OPERATIONAL`로 capability를 분리한다.
 정책을 코드 plugin만으로 판단하는 서비스라면 `platform.governance.operational.require-policy-config-in-enforcing-mode=false`를 명시한다.
 identity audit 중심 서비스라면 `service-role-preset=identity-service`를 우선 검토한다.
 
 ## Plugin file store 경로 누락
 
-`platform.governance.plugin-policy-engine.store=FILE`이면 `platform.governance.plugin-policy-engine.file-path`가 필요하다.
+`platform.governance.feature-flags.store=FILE`이면 `platform.governance.feature-flags.file-path`가 필요하다.
+기존 `platform.governance.plugin-policy-engine.*` prefix는 2.0.1 deprecated alias이며 3.0.0에서 제거한다.
+새 `platform.governance.feature-flags.*` prefix와 legacy prefix를 동시에 쓰면 profile과 무관하게 시작에 실패한다.
 이 검증은 profile과 무관하게 적용되며 `platform.governance.operational.fail-fast-enabled=false`로도 우회되지 않는다.
 
 ## Violation handler 실패

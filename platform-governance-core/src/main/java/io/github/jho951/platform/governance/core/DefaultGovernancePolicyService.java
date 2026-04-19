@@ -9,6 +9,10 @@ import io.github.jho951.platform.governance.api.GovernanceVerdict;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Pure Java reference engine that evaluates {@link GovernancePolicy} instances
+ * without Spring auto-configuration, audit delivery, or violation handling.
+ */
 public final class DefaultGovernancePolicyService implements GovernancePolicyService {
     private final List<GovernancePolicy> policies;
 
@@ -30,4 +34,3 @@ public final class DefaultGovernancePolicyService implements GovernancePolicySer
         return GovernanceVerdict.allow("default", "all governance policies passed");
     }
 }
-

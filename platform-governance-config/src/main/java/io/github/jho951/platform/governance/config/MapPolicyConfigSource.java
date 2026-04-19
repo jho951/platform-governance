@@ -1,5 +1,6 @@
 package io.github.jho951.platform.governance.config;
 
+import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 
 import java.util.Collections;
@@ -27,7 +28,17 @@ public final class MapPolicyConfigSource implements PolicyConfigSource {
     }
 
     @Override
+    @Deprecated(since = "2.0.1", forRemoval = true)
+    @SuppressWarnings("removal")
     public boolean isOperational() {
-        return !values.isEmpty();
+        return operationalStatus().isOperational();
+    }
+
+    @Override
+    public PolicyConfigOperationalStatus operationalStatus() {
+        if (values.isEmpty()) {
+            return PolicyConfigOperationalStatus.notConfigured("map policy config has no values");
+        }
+        return PolicyConfigOperationalStatus.operational("map policy config has " + values.size() + " value(s)");
     }
 }

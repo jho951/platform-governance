@@ -4,6 +4,7 @@ import com.policyconfig.contracts.PolicyKey;
 import com.policyconfig.contracts.PolicyResolution;
 import com.policyconfig.contracts.PolicyResolver;
 import com.policyconfig.contracts.PolicySnapshotProvider;
+import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 
 import java.util.Map;
@@ -40,7 +41,14 @@ public final class PolicyResolverPolicyConfigSource implements PolicyConfigSourc
     }
 
     @Override
+    @Deprecated(since = "2.0.1", forRemoval = true)
+    @SuppressWarnings("removal")
     public boolean isOperational() {
-        return true;
+        return operationalStatus().isOperational();
+    }
+
+    @Override
+    public PolicyConfigOperationalStatus operationalStatus() {
+        return PolicyConfigOperationalStatus.operational("PolicyResolver is available");
     }
 }

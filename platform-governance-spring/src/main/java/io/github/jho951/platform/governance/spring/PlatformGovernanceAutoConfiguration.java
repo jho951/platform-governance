@@ -35,10 +35,12 @@ import io.github.jho951.platform.governance.audit.IdentityAuditEventValidator;
 import io.github.jho951.platform.governance.audit.InMemoryAuditLogRecorder;
 import io.github.jho951.platform.governance.audit.SanitizingAuditLogRecorder;
 import io.github.jho951.platform.governance.config.PolicyResolverPolicyConfigSource;
-import io.github.jho951.platform.governance.engine.PluginGovernancePolicyEngine;
+import io.github.jho951.platform.governance.engine.PluginGovernanceDecisionEngine;
 import io.github.jho951.platform.governance.identity.AuditAttributeEnricher;
 import io.github.jho951.platform.governance.identity.IdentityAuditCustomizer;
 import io.github.jho951.platform.governance.identity.IdentityAuditRecorder;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,6 +61,8 @@ import java.util.Map;
 @ConditionalOnProperty(prefix = "platform.governance", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(PlatformGovernanceProperties.class)
 public class PlatformGovernanceAutoConfiguration {
+    private static final Log LOGGER = LogFactory.getLog(PlatformGovernanceAutoConfiguration.class);
+
     @Bean
     public static BeanPostProcessor platformGovernancePropertiesPresetPostProcessor() {
         PlatformGovernancePresetApplier presetApplier = new PlatformGovernancePresetApplier();
@@ -67,6 +71,21 @@ public class PlatformGovernanceAutoConfiguration {
             public Object postProcessAfterInitialization(Object bean, String beanName) {
                 if (bean instanceof PlatformGovernanceProperties properties) {
                     presetApplier.apply(properties);
+                }
+                return bean;
+            }
+        };
+    }
+
+    @Bean
+    public static BeanPostProcessor platformGovernancePolicyServiceWarningPostProcessor() {
+        return new BeanPostProcessor() {
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String beanName) {
+                if (bean instanceof GovernancePolicyService && !"platformGovernancePolicyService".equals(beanName)) {
+                    LOGGER.warn("Custom GovernancePolicyService bean detected. Platform wrapper remains the effective "
+                            + "primary bean. Official extension points are GovernanceDecisionEngine, "
+                            + "PolicyConfigSource, and AuditSink.");
                 }
                 return bean;
             }
@@ -126,7 +145,7 @@ public class PlatformGovernanceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public FeatureFlagClient platformGovernanceFeatureFlagClient(PlatformGovernanceProperties properties) {
-        PlatformGovernanceProperties.PluginPolicyEngine engine = properties.getPluginPolicyEngine();
+        PlatformGovernanceProperties.FeatureFlags engine = properties.effectiveFeatureFlags();
         FeatureFlagConfig.Builder builder = FeatureFlagConfig.builder()
                 .store(FeatureFlagConfig.Store.valueOf(engine.getStore().name()))
                 .cacheTtl(Duration.ofMillis(engine.getCacheTtlMillis()));
@@ -181,9 +200,14 @@ public class PlatformGovernanceAutoConfiguration {
     ) {
         List<AuditLogRecorder> recorders = new java.util.ArrayList<>();
         recorders.add(platformRecorder);
-        auditLogRecorders.orderedStream()
+        List<AuditLogRecorder> externalRecorders = auditLogRecorders.orderedStream()
                 .filter(recorder -> recorder != platformRecorder)
-                .forEach(recorders::add);
+                .toList();
+        if (!externalRecorders.isEmpty()) {
+            LOGGER.warn("External AuditLogRecorder bean detected. This compatibility fan-out path is deprecated "
+                    + "since 2.0.1. Use AuditSink instead. Removal planned for 3.0.0.");
+        }
+        recorders.addAll(externalRecorders);
         return recorders.size() == 1 ? platformRecorder : new CompositeAuditLogRecorder(recorders);
     }
 
@@ -232,14 +256,14 @@ public class PlatformGovernanceAutoConfiguration {
             List<GovernancePolicyPlugin> plugins,
             PlatformGovernanceProperties properties
     ) {
-        return new PluginGovernancePolicyEngine(
+        return new PluginGovernanceDecisionEngine(
                 plugins,
                 properties.getEngine().isStrict(),
                 properties.getEngine().getFailurePolicy()
         );
     }
 
-    @Bean
+    @Bean(name = "platformGovernancePolicyService")
     @Primary
     public GovernancePolicyService governancePolicyService(
             GovernanceDecisionEngine delegate,

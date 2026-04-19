@@ -128,8 +128,11 @@ final class RemotePolicyConfigSource implements PolicyConfigSource {
     }
 
     @Override
-    public boolean isOperational() {
-        return remoteClient.isHealthy();
+    public PolicyConfigOperationalStatus operationalStatus() {
+        if (remoteClient.isHealthy()) {
+            return PolicyConfigOperationalStatus.operational("remote policy source healthy");
+        }
+        return PolicyConfigOperationalStatus.unavailable("remote policy source health check failed");
     }
 }
 ```

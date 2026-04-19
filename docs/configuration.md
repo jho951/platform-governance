@@ -15,9 +15,9 @@
 - `audit.identity.validation-enabled`
 - `audit.identity.fail-on-validation-error`
 - `policy-config.values.*`
-- `plugin-policy-engine.store`
-- `plugin-policy-engine.file-path`
-- `plugin-policy-engine.cache-ttl-millis`
+- `feature-flags.store`
+- `feature-flags.file-path`
+- `feature-flags.cache-ttl-millis`
 - `engine.strict`
 - `engine.failure-policy`
 - `violation.action`
@@ -77,7 +77,9 @@ platform:
 - identity audit는 `IdentityAuditRecorder` 공개 API를 제공하고 내부에서 audit library의 `AuditLogger`로 매핑한다.
 - `MdcAuditContextResolver`가 MDC의 `traceId`, `requestId`, `clientIp`, `userAgent`를 기본 correlation 값으로 연결한다.
 - policy config는 `policy-config`의 `PolicyResolver` 기반 기본 소스를 제공한다.
-- `plugin-policy-engine` 설정은 `FeatureFlagClient` 기본 bean을 제공하기 위한 config 호환 기준으로 사용한다.
+- `feature-flags` 설정은 `FeatureFlagClient` 기본 bean을 제공하기 위한 config 호환 기준으로 사용한다.
+- 기존 `plugin-policy-engine.*` prefix는 2.0.1 deprecated alias이며 3.0.0에서 제거한다.
+- `feature-flags.*`와 `plugin-policy-engine.*`를 동시에 사용하면 profile과 무관하게 시작에 실패한다.
 - governance decision engine은 기본적으로 등록된 `GovernancePolicyPlugin`을 bean 순서대로 순회한다.
 - 정말 전사 공통인 불변 규칙만 기본 강제로 둔다.
 - 서비스별 차이가 필요한 값은 `platform.governance.*` 설정 또는 서비스가 등록한 bean으로 override한다.
@@ -90,7 +92,8 @@ platform:
 
 다음 설정은 profile과 무관하게 항상 검증한다.
 
-- `plugin-policy-engine.store=FILE`이면 `plugin-policy-engine.file-path`가 필요하다.
+- `feature-flags.store=FILE`이면 `feature-flags.file-path`가 필요하다.
+- `feature-flags.*`와 legacy `plugin-policy-engine.*`를 동시에 설정하면 실패한다.
 
 `operational.fail-fast-enabled=true`이면 다음 운영 위험 설정을 시작 시점에 검증한다.
 
@@ -103,12 +106,12 @@ platform:
 - active profile과 `audit.environment`의 운영/비운영 의미가 충돌하면 기본적으로 실패한다.
 - 운영 profile에서 `audit.identity.validation-enabled=false`는 기본적으로 실패한다.
 - 운영 profile에서 `audit.failure-policy=IGNORE`는 기본적으로 실패한다.
-- 운영 profile에서 거부 대응 action(`DENY`, `ESCALATE`)을 쓰면 policy config source가 비운영 상태일 때 기본적으로 실패한다.
-- policy config source가 snapshot을 지원하는 경우 snapshot이 비어 있어도 기본적으로 실패한다. snapshot을 지원하지 않는 remote/lazy source는 `supportsSnapshot=false`, `isOperational=true`로 capability를 분리한다.
+- 운영 profile에서 거부 대응 action(`DENY`, `ESCALATE`)을 쓰면 policy config source의 `operationalStatus()`가 `OPERATIONAL`이 아닐 때 기본적으로 실패한다.
+- policy config source가 snapshot을 지원하는 경우 snapshot이 비어 있어도 기본적으로 실패한다. snapshot을 지원하지 않는 remote/lazy source는 `supportsSnapshot=false`, `operationalStatus=OPERATIONAL`로 capability를 분리한다.
 - 운영 profile에서 `violation.handler-failure-fatal=false`는 기본적으로 실패한다.
 
-운영 감사 출력 대상은 `AuditSink` bean으로 등록한다.
-`AuditLogRecorder`를 직접 override하더라도 운영 기본 정책은 `AuditSink` 존재 여부를 확인한다.
+운영 감사 출력 대상의 공식 production SPI는 `AuditSink` bean이다.
+`AuditLogRecorder`는 governance event를 audit pipeline으로 넘기는 내부 adapter다. 외부 `AuditLogRecorder` fan-out은 2.x 호환 경로로 유지하지만 2.0.1부터 deprecated이며 3.0.0에서 제거한다. 새 production 출력 대상은 `AuditSink`만 사용한다.
 
 서비스가 의도적으로 다른 운영 정책을 선택해야 하면 `operational.allow-*` 또는 `operational.require-*` 속성으로 명시적으로 완화한다.
 `operational.fail-fast-enabled=false`는 운영 위험 설정 검증의 마지막 탈출구로만 사용하며, 항상 검증 항목은 우회하지 않는다.
@@ -129,7 +132,7 @@ platform:
 
 - `FAIL_CLOSED`: plugin exception을 `DENY`로 반환한다.
 - `FAIL_OPEN`: plugin exception을 `ALLOW`로 반환하되 reason에 실패 정보를 남긴다.
-- `AUDIT_AND_DENY`: plugin exception을 `DENY`로 반환한다. Spring wrapper audit에 `engine.failure-type=plugin-exception`이 남는다.
+- `AUDIT_AND_DENY`: 2.0.1 deprecated alias다. `FAIL_CLOSED`와 동일하게 동작하므로 새 설정은 `FAIL_CLOSED`를 사용한다. 3.0.0에서 제거한다.
 
 ## 설정 예시
 
@@ -148,7 +151,7 @@ platform:
     policy-config:
       values:
         feature.review.required: "true"
-    plugin-policy-engine:
+    feature-flags:
       store: memory
       cache-ttl-millis: 3000
     engine:

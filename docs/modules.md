@@ -6,7 +6,7 @@
 - `platform-governance-bom`: private consumer용 dependency constraints
 - `platform-governance-audit`: `audit-log` 기반 audit recorder adapter
 - `platform-governance-config`: `policy-config` 기반 config source adapter
-- `platform-governance-core`: platform 공통 정책 서비스
+- `platform-governance-core`: Spring/audit/violation wrapper가 없는 pure Java reference engine
 - `platform-governance-engine`: platform `GovernancePolicyPlugin` chain 기반 평가 엔진
 - `platform-governance-spring`: Spring boot auto-configuration과 운영 fail-fast 검증
 - `platform-governance-starter`: 3계층 공식 Spring Boot starter 진입점

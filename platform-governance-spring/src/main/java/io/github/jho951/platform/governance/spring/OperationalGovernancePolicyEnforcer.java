@@ -2,6 +2,7 @@ package io.github.jho951.platform.governance.spring;
 
 import io.github.jho951.platform.governance.api.AuditFailurePolicy;
 import io.github.jho951.platform.governance.api.OperationalProfileResolver;
+import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 import io.github.jho951.platform.governance.api.ViolationAction;
 
@@ -105,10 +106,16 @@ public final class OperationalGovernancePolicyEnforcer {
     }
 
     private void validateAlways(List<String> violations) {
-        PlatformGovernanceProperties.PluginPolicyEngine engine = properties.getPluginPolicyEngine();
-        if (engine.getStore() == PlatformGovernanceProperties.PluginPolicyEngine.Store.FILE
-                && (engine.getFilePath() == null || engine.getFilePath().isBlank())) {
-            violations.add("plugin-policy-engine.store=FILE requires plugin-policy-engine.file-path");
+        if (properties.hasMixedFeatureFlagPrefixes()) {
+            violations.add("Detected both platform.governance.feature-flags.* and legacy "
+                    + "platform.governance.plugin-policy-engine.*. Mixed configuration is not supported. "
+                    + "Use exactly one prefix.");
+            return;
+        }
+        PlatformGovernanceProperties.FeatureFlags featureFlags = properties.effectiveFeatureFlags();
+        if (featureFlags.getStore() == PlatformGovernanceProperties.FeatureFlags.Store.FILE
+                && (featureFlags.getFilePath() == null || featureFlags.getFilePath().isBlank())) {
+            violations.add("feature-flags.store=FILE requires feature-flags.file-path");
         }
     }
 
@@ -145,10 +152,12 @@ public final class OperationalGovernancePolicyEnforcer {
                 && !operational.isAllowIgnoreAuditFailurePolicyInProduction()) {
             violations.add("audit.failure-policy=IGNORE is not allowed in production profiles");
         }
+        PolicyConfigOperationalStatus policyConfigStatus = policyConfigSource.operationalStatus();
         if (operational.isRequirePolicyConfigInEnforcingMode()
                 && isDenyResponse(properties.getViolation().getAction())
-                && !policyConfigSource.isOperational()) {
-            violations.add("policy config source must be operational when violation.action is enforcing in production profiles");
+                && !policyConfigStatus.isOperational()) {
+            violations.add("policy config source must be operational when violation.action is enforcing in production profiles"
+                    + " (status=" + policyConfigStatus + ")");
         }
         if (operational.isRequirePolicyConfigInEnforcingMode()
                 && isDenyResponse(properties.getViolation().getAction())

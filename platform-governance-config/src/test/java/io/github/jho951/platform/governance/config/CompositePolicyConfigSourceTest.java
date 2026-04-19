@@ -1,5 +1,6 @@
 package io.github.jho951.platform.governance.config;
 
+import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 import org.junit.jupiter.api.Test;
 
@@ -14,9 +15,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CompositePolicyConfigSourceTest {
     @Test
     void isOperationalRequiresAtLeastOneOperationalSource() {
-        assertFalse(new CompositePolicyConfigSource(java.util.List.of()).isOperational());
-        assertFalse(new CompositePolicyConfigSource(java.util.List.of(new NonOperationalSource())).isOperational());
-        assertTrue(new CompositePolicyConfigSource(java.util.List.of(new MapPolicyConfigSource(Map.of("feature", "true")))).isOperational());
+        assertFalse(new CompositePolicyConfigSource(java.util.List.of()).operationalStatus().isOperational());
+        assertFalse(new CompositePolicyConfigSource(java.util.List.of(new NonOperationalSource())).operationalStatus().isOperational());
+        assertTrue(new CompositePolicyConfigSource(java.util.List.of(new MapPolicyConfigSource(Map.of("feature", "true"))))
+                .operationalStatus().isOperational());
+    }
+
+    @Test
+    void operationalStatusExplainsNonOperationalSource() {
+        CompositePolicyConfigSource source = new CompositePolicyConfigSource(java.util.List.of(new NonOperationalSource()));
+
+        assertEquals("NOT_CONFIGURED", source.operationalStatus().state().name());
     }
 
     @Test
@@ -69,8 +78,8 @@ class CompositePolicyConfigSourceTest {
         }
 
         @Override
-        public boolean isOperational() {
-            return true;
+        public PolicyConfigOperationalStatus operationalStatus() {
+            return PolicyConfigOperationalStatus.operational("test source");
         }
     }
 }

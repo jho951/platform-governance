@@ -34,7 +34,7 @@ class PluginGovernancePolicyEngineTest {
             }
         };
 
-        PluginGovernancePolicyEngine engine = new PluginGovernancePolicyEngine(List.of(plugin), false);
+        PluginGovernanceDecisionEngine engine = new PluginGovernanceDecisionEngine(List.of(plugin), false);
         GovernanceVerdict verdict = engine.evaluate(
                 new GovernanceRequest("user-1", "/resource", "review", Map.of(), Instant.parse("2026-01-01T00:00:00Z")),
                 new GovernanceContext("actor-1", "prod", Map.of())
@@ -45,7 +45,7 @@ class PluginGovernancePolicyEngineTest {
 
     @Test
     void failClosedDeniesWhenPluginThrows() {
-        PluginGovernancePolicyEngine engine = new PluginGovernancePolicyEngine(
+        PluginGovernanceDecisionEngine engine = new PluginGovernanceDecisionEngine(
                 List.of(throwingPlugin()),
                 false,
                 GovernanceEngineFailurePolicy.FAIL_CLOSED
@@ -60,7 +60,7 @@ class PluginGovernancePolicyEngineTest {
 
     @Test
     void failOpenAllowsWhenPluginThrows() {
-        PluginGovernancePolicyEngine engine = new PluginGovernancePolicyEngine(
+        PluginGovernanceDecisionEngine engine = new PluginGovernanceDecisionEngine(
                 List.of(throwingPlugin()),
                 false,
                 GovernanceEngineFailurePolicy.FAIL_OPEN

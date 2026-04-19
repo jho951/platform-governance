@@ -18,6 +18,7 @@ public class PlatformGovernanceProperties {
     private GovernanceServiceRolePreset serviceRolePreset = GovernanceServiceRolePreset.GENERAL;
     private final Audit audit = new Audit();
     private final PolicyConfig policyConfig = new PolicyConfig();
+    private final FeatureFlags featureFlags = new FeatureFlags();
     private final PluginPolicyEngine pluginPolicyEngine = new PluginPolicyEngine();
     private final Engine engine = new Engine();
     private final Violation violation = new Violation();
@@ -47,6 +48,17 @@ public class PlatformGovernanceProperties {
         return policyConfig;
     }
 
+    public FeatureFlags getFeatureFlags() {
+        return featureFlags;
+    }
+
+    /**
+     * @deprecated since 2.0.1. Use {@link #getFeatureFlags()} and the
+     * {@code platform.governance.feature-flags.*} prefix. The legacy
+     * {@code platform.governance.plugin-policy-engine.*} prefix will be removed
+     * in 3.0.0.
+     */
+    @Deprecated(since = "2.0.1", forRemoval = true)
     public PluginPolicyEngine getPluginPolicyEngine() {
         return pluginPolicyEngine;
     }
@@ -189,16 +201,42 @@ public class PlatformGovernanceProperties {
         }
     }
 
-    public static class PluginPolicyEngine {
+    FeatureFlags effectiveFeatureFlags() {
+        FeatureFlags effective = new FeatureFlags();
+        effective.applyStore(featureFlags.isStoreConfigured() ? featureFlags.getStore() : pluginPolicyEngine.getStore());
+        effective.applyFilePath(featureFlags.isFilePathConfigured() ? featureFlags.getFilePath() : pluginPolicyEngine.getFilePath());
+        effective.applyCacheTtlMillis(featureFlags.isCacheTtlMillisConfigured()
+                ? featureFlags.getCacheTtlMillis()
+                : pluginPolicyEngine.getCacheTtlMillis());
+        return effective;
+    }
+
+    boolean hasMixedFeatureFlagPrefixes() {
+        return featureFlags.isConfigured() && pluginPolicyEngine.isConfigured();
+    }
+
+    public static class FeatureFlags {
         private Store store = Store.MEMORY;
         private String filePath;
         private long cacheTtlMillis = 3000;
+        private boolean storeConfigured = false;
+        private boolean filePathConfigured = false;
+        private boolean cacheTtlMillisConfigured = false;
 
         public Store getStore() {
             return store;
         }
 
         public void setStore(Store store) {
+            this.storeConfigured = true;
+            this.store = store == null ? Store.MEMORY : store;
+        }
+
+        boolean isStoreConfigured() {
+            return storeConfigured;
+        }
+
+        void applyStore(Store store) {
             this.store = store == null ? Store.MEMORY : store;
         }
 
@@ -207,6 +245,15 @@ public class PlatformGovernanceProperties {
         }
 
         public void setFilePath(String filePath) {
+            this.filePathConfigured = true;
+            this.filePath = filePath;
+        }
+
+        boolean isFilePathConfigured() {
+            return filePathConfigured;
+        }
+
+        void applyFilePath(String filePath) {
             this.filePath = filePath;
         }
 
@@ -215,13 +262,35 @@ public class PlatformGovernanceProperties {
         }
 
         public void setCacheTtlMillis(long cacheTtlMillis) {
+            this.cacheTtlMillisConfigured = true;
             this.cacheTtlMillis = cacheTtlMillis < 0 ? 0 : cacheTtlMillis;
+        }
+
+        boolean isCacheTtlMillisConfigured() {
+            return cacheTtlMillisConfigured;
+        }
+
+        void applyCacheTtlMillis(long cacheTtlMillis) {
+            this.cacheTtlMillis = cacheTtlMillis < 0 ? 0 : cacheTtlMillis;
+        }
+
+        boolean isConfigured() {
+            return storeConfigured || filePathConfigured || cacheTtlMillisConfigured;
         }
 
         public enum Store {
             MEMORY,
             FILE
         }
+    }
+
+    /**
+     * @deprecated since 2.0.1. Use {@link FeatureFlags}. This class remains
+     * only for the legacy {@code platform.governance.plugin-policy-engine.*}
+     * prefix and will be removed in 3.0.0.
+     */
+    @Deprecated(since = "2.0.1", forRemoval = true)
+    public static class PluginPolicyEngine extends FeatureFlags {
     }
 
     public static class Engine {

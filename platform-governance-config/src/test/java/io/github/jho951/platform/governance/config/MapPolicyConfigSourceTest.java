@@ -18,6 +18,7 @@ class MapPolicyConfigSourceTest {
     void emptyMapSourceIsNotOperational() {
         MapPolicyConfigSource source = new MapPolicyConfigSource(Map.of());
 
-        assertEquals(false, source.isOperational());
+        assertEquals(false, source.operationalStatus().isOperational());
+        assertEquals("NOT_CONFIGURED", source.operationalStatus().state().name());
     }
 }

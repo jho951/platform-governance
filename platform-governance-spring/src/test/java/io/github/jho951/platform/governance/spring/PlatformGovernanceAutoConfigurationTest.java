@@ -17,6 +17,7 @@ import io.github.jho951.platform.governance.api.GovernanceRequest;
 import io.github.jho951.platform.governance.api.GovernanceVerdict;
 import io.github.jho951.platform.governance.api.PolicyChangeEvent;
 import io.github.jho951.platform.governance.api.PolicyChangeRecorder;
+import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 import io.github.jho951.platform.governance.api.ViolationAction;
 import io.github.jho951.platform.governance.api.ViolationHandler;
@@ -297,7 +298,7 @@ class PlatformGovernanceAutoConfigurationTest {
     @Test
     void operationalEnforcerRequiresFilePathForFileStore() {
         PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
-        properties.getPluginPolicyEngine().setStore(PlatformGovernanceProperties.PluginPolicyEngine.Store.FILE);
+        properties.getFeatureFlags().setStore(PlatformGovernanceProperties.FeatureFlags.Store.FILE);
         properties.getOperational().setFailFastEnabled(false);
         OperationalGovernancePolicyEnforcer enforcer = new OperationalGovernancePolicyEnforcer(
                 properties,
@@ -308,7 +309,7 @@ class PlatformGovernanceAutoConfigurationTest {
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, enforcer::enforce);
 
-        assertTrue(exception.getMessage().contains("plugin-policy-engine.file-path"));
+        assertTrue(exception.getMessage().contains("feature-flags.file-path"));
     }
 
     @Test
@@ -400,11 +401,38 @@ class PlatformGovernanceAutoConfigurationTest {
         contextRunner
                 .withPropertyValues(
                         "platform.governance.operational.fail-fast-enabled=false",
+                        "platform.governance.feature-flags.store=file"
+                )
+                .run(context -> {
+                    assertNotNull(context.getStartupFailure());
+                    assertTrue(context.getStartupFailure().getMessage().contains("feature-flags.file-path"));
+                });
+    }
+
+    @Test
+    void legacyPluginPolicyEnginePrefixStillBindsAsDeprecatedAlias() {
+        contextRunner
+                .withPropertyValues(
+                        "platform.governance.operational.fail-fast-enabled=false",
                         "platform.governance.plugin-policy-engine.store=file"
                 )
                 .run(context -> {
                     assertNotNull(context.getStartupFailure());
-                    assertTrue(context.getStartupFailure().getMessage().contains("plugin-policy-engine.file-path"));
+                    assertTrue(context.getStartupFailure().getMessage().contains("feature-flags.file-path"));
+                });
+    }
+
+    @Test
+    void autoConfigurationFailsWhenFeatureFlagPrefixesAreMixed() {
+        contextRunner
+                .withPropertyValues(
+                        "platform.governance.operational.fail-fast-enabled=false",
+                        "platform.governance.feature-flags.store=memory",
+                        "platform.governance.plugin-policy-engine.cache-ttl-millis=5000"
+                )
+                .run(context -> {
+                    assertNotNull(context.getStartupFailure());
+                    assertTrue(context.getStartupFailure().getMessage().contains("Mixed configuration is not supported"));
                 });
     }
 
@@ -510,12 +538,12 @@ class PlatformGovernanceAutoConfigurationTest {
                 return Map.of();
             }
 
-            @Override
-            public boolean isOperational() {
-                return true;
-            }
+        @Override
+        public PolicyConfigOperationalStatus operationalStatus() {
+            return PolicyConfigOperationalStatus.operational("test source is operational");
+        }
 
-            @Override
+        @Override
             public boolean supportsSnapshot() {
                 return false;
             }
