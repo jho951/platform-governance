@@ -1,0 +1,36 @@
+oss_contract:
+  repo: https://github.com/jho951/oss-contract.git
+  ref: main
+  commit: 3ee4e1aadfd3410de32a64c156fb69a2099a973a
+
+service:
+  name: platform-governance
+  branch: main
+  layer: layer2
+  role: runtime-platform
+
+standards:
+  registry:
+    - registry/layer2/README.md
+    - registry/layer2/standards/platform-governance.md
+  structure:
+    - registry/layer2/structure/build-gradle.md
+    - registry/layer2/structure/settings-gradle.md
+    - registry/layer2/structure/gradle-properties.md
+  operations:
+    - registry/layer2/operations/ci-cd.md
+    - registry/layer2/operations/publish.md
+    - registry/layer2/operations/checklist.md
+  repository_state:
+    - repositories/layer2/platform-governance/README.md
+
+validation:
+  docs_structure: true
+  gradle_structure: true
+  publish_structure: true
+  ci_cd: true
+  repository_tree: true
+
+notes:
+  owner: platform-governance
+  automation_level: guardrail
