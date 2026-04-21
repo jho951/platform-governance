@@ -17,9 +17,22 @@
 
 ## Audit sink 누락
 
-운영 profile에서 `AuditSink` bean이 없으면 기본적으로 시작에 실패한다.
-운영 감사 출력 대상은 `AuditSink`로 등록한다.
+명시적 `AuditSink` bean이 없으면 starter는 `LoggingAuditSink` fallback으로 governance audit을 애플리케이션 로그에 남긴다.
+운영 profile에서 `platform.governance.operational.require-audit-sink-in-production=true`인데 명시적 `AuditSink` bean이 없으면 기본적으로 시작에 실패한다.
+운영 감사 출력 대상은 `AuditSink`로 등록한다. 로그 기반 delivery만 필요하면 `platform-governance-audit`의 `LoggingAuditSink`를 bean으로 직접 등록해도 된다.
 감사를 외부 sink로 보내지 않는 서비스라면 `platform.governance.operational.require-audit-sink-in-production=false`를 명시한다.
+
+## External AuditLogRecorder migration
+
+외부 `AuditLogRecorder` bean은 기본적으로 무시된다.
+기존 경로를 잠시 유지해야 하면 `platform.governance.compat.audit-log-recorder-fanout-enabled=true`를 명시한다.
+이 compat fan-out은 2.0.1부터 deprecated이며 3.0.0에서 제거 예정이다.
+
+## GovernancePolicyService override 실패
+
+`GovernancePolicyService`는 공식 override point가 아니다.
+서비스가 이 bean을 직접 등록하면 시작이 실패한다.
+정책 판단은 `GovernanceDecisionEngine` 또는 `GovernancePolicyPlugin`으로 교체하고, audit/violation/config는 `AuditSink`, `ViolationHandler`, `PolicyConfigSource`로 확장한다.
 
 ## Policy config 누락
 

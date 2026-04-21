@@ -60,7 +60,7 @@
 - 정책 publish/revoke/history가 업무 의미를 가지면 해당 workflow의 최종 소유권
 - 별도 `Governance-server`가 생기는 경우 그 서버의 endpoint, DB, 운영자 관리 기능
 
-Auth-server 같은 identity 서비스는 `IdentityAuditRecorder`로 표준 action을 호출하고, 2계층이 이를 audit library의 `AuditLogger` 이벤트로 변환한다.
+`auth-service` 같은 identity 서비스는 `IdentityAuditRecorder`로 표준 action을 호출하고, 2계층이 이를 audit library의 `AuditLogger` 이벤트로 변환한다.
 
 ## 서비스 역할 preset
 
@@ -73,7 +73,7 @@ Auth-server 같은 identity 서비스는 `IdentityAuditRecorder`로 표준 actio
 | `RESOURCE_SERVICE` | resource API의 정책 평가를 강하게 적용 |
 | `OBSERVABILITY_SERVICE` | audit/alert 중심 운영을 허용하되 service identity와 audit sink는 유지 |
 
-Preset은 서비스 이름을 알지 않는다. `auth-server`, `authz-server`, `block-server` 같은 이름별 분기는 3계층 설정으로 남긴다.
+Preset은 서비스 이름을 알지 않는다. `auth-service`, `authz-service`, `editor-service` 같은 이름별 분기는 3계층 설정으로 남긴다.
 
 ## 원칙
 
@@ -87,7 +87,7 @@ Preset은 서비스 이름을 알지 않는다. `auth-server`, `authz-server`, `
 - service-role-preset은 명시 설정을 덮어쓰지 않고, 비어 있는 운영 기본값만 채운다.
 - 2계층 artifact는 GitHub Packages private Maven registry로 배포한다.
 - 외부 audit/config/engine library의 의미를 다시 정의하지 않는다.
-- 2계층은 범용 `AuditSink`/delivery primitive를 재구현하지 않는다.
+- 2계층은 범용 audit stack 전체를 재정의하지 않는다. 다만 local/dev 가시성을 위한 최소 fallback `LoggingAuditSink`는 제공한다.
 - 서비스 서버는 `service-contract`를 기준으로 이 platform을 소비한다.
 - security와 storage 플랫폼과 직접 구현 의존을 만들지 않는다.
 - `platform-owned`와 `2계층`은 같은 말이 아니다. 플랫폼 소유 서비스라도 deploy되고 상태/workflow를 소유하면 3계층이다.

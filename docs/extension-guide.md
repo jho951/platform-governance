@@ -24,7 +24,8 @@
 - `GovernancePolicyPlugin`
 - `GovernanceDecisionEngine`
 - `AuditSink`는 production 감사 출력 대상의 공식 SPI다.
-- `AuditLogRecorder`는 platform 내부 adapter다. 외부 fan-out은 2.x 호환 경로로 유지하지만 2.0.1부터 deprecated이며 3.0.0에서 제거한다.
+- `LoggingAuditSink`는 `platform-governance-audit`가 제공하는 ready-made sink다.
+- `AuditLogRecorder`는 platform 내부 adapter다. 외부 fan-out은 기본 비활성이며, `platform.governance.compat.audit-log-recorder-fanout-enabled=true`일 때만 2.x 임시 compat 경로로 허용한다. 이 경로는 2.0.1부터 deprecated이며 3.0.0에서 제거한다.
 - `IdentityAuditRecorder`
 - `IdentityAuditCustomizer`
 - `AuditAttributeEnricher`
@@ -38,7 +39,7 @@
 `platform-governance-spring`은 위 bean들을 기본 등록하고, platform audit recorder는 `AuditSink`로 delivery를 위임한다.
 서비스는 `GovernancePolicyPlugin` 또는 `GovernanceDecisionEngine`을 등록해 도메인별 정책 판단만 바꾼다.
 `GovernancePolicyService`는 audit 기록, violation handling, wrapper 수준의 공통 골격을 포함하므로 공식 override point가 아니다.
-사용자가 `GovernancePolicyService` bean을 등록하면 platform wrapper가 계속 primary로 동작하고 startup warning을 남긴다.
+사용자가 `GovernancePolicyService` bean을 등록하면 startup fail-fast로 막는다.
 커스텀 `PolicyConfigSource`는 운영 판단을 boolean으로만 숨기지 말고 `operationalStatus()`로 `OPERATIONAL`, `NOT_CONFIGURED`, `UNAVAILABLE`, `UNKNOWN` 중 하나와 이유를 반환한다.
 
 ## Preset 확장 기준
@@ -57,7 +58,7 @@
 - plugin은 결정 이유를 설명할 수 있어야 한다.
 - audit는 결과와 사유를 남겨야 한다.
 - governance audit는 정책 source 전체 snapshot이 아니라 request/context/verdict/evidence를 남긴다.
-- Auth-server 같은 identity 서비스는 범용 `AuditLogRecorder` 대신 `IdentityAuditRecorder`를 우선 소비한다.
+- `auth-service` 같은 identity 서비스는 범용 `AuditLogRecorder` 대신 `IdentityAuditRecorder`를 우선 소비한다.
 - 2계층은 identity taxonomy와 required field validation을 제공하되, sink 자체는 외부 audit library의 `AuditSink`를 사용한다.
 - 정책 변경은 `PolicyChangeRecorder`로 기록한다.
 - 위반 대응은 `ViolationHandler`를 추가하거나 override한다.

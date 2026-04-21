@@ -32,7 +32,7 @@ import io.github.jho951.platform.governance.audit.AuditViolationHandler;
 import io.github.jho951.platform.governance.audit.CompositeAuditLogRecorder;
 import io.github.jho951.platform.governance.audit.DefaultIdentityAuditRecorder;
 import io.github.jho951.platform.governance.audit.IdentityAuditEventValidator;
-import io.github.jho951.platform.governance.audit.InMemoryAuditLogRecorder;
+import io.github.jho951.platform.governance.audit.LoggingAuditSink;
 import io.github.jho951.platform.governance.audit.SanitizingAuditLogRecorder;
 import io.github.jho951.platform.governance.config.PolicyResolverPolicyConfigSource;
 import io.github.jho951.platform.governance.engine.PluginGovernanceDecisionEngine;
@@ -46,6 +46,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.env.Environment;
 import org.springframework.context.annotation.Bean;
@@ -78,14 +79,14 @@ public class PlatformGovernanceAutoConfiguration {
     }
 
     @Bean
-    public static BeanPostProcessor platformGovernancePolicyServiceWarningPostProcessor() {
+    public static BeanPostProcessor platformGovernancePolicyServiceOverrideGuardPostProcessor() {
         return new BeanPostProcessor() {
             @Override
             public Object postProcessAfterInitialization(Object bean, String beanName) {
                 if (bean instanceof GovernancePolicyService && !"platformGovernancePolicyService".equals(beanName)) {
-                    LOGGER.warn("Custom GovernancePolicyService bean detected. Platform wrapper remains the effective "
-                            + "primary bean. Official extension points are GovernanceDecisionEngine, "
-                            + "PolicyConfigSource, and AuditSink.");
+                    throw new BeanCreationException(beanName,
+                            "Custom GovernancePolicyService beans are not supported. Use GovernanceDecisionEngine, "
+                                    + "PolicyConfigSource, ViolationHandler, or AuditSink instead.");
                 }
                 return bean;
             }
@@ -164,12 +165,13 @@ public class PlatformGovernanceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AuditLogger platformGovernanceAuditLogger(
+            PlatformGovernanceProperties properties,
             org.springframework.beans.factory.ObjectProvider<AuditSink> auditSinks,
             org.springframework.beans.factory.ObjectProvider<AuditContextResolver> contextResolvers,
             org.springframework.beans.factory.ObjectProvider<AuditMaskingPolicy> maskingPolicy
     ) {
         List<AuditSink> sinks = auditSinks.orderedStream().toList();
-        AuditSink sink = sinks.isEmpty() ? event -> { } : new CompositeAuditSink(sinks);
+        AuditSink sink = sinks.isEmpty() ? defaultAuditSink(properties) : new CompositeAuditSink(sinks);
         return new DefaultAuditLogger(sink, contextResolvers.orderedStream().toList(), maskingPolicy.getIfAvailable());
     }
 
@@ -177,38 +179,39 @@ public class PlatformGovernanceAutoConfiguration {
     @ConditionalOnMissingBean(name = "platformGovernanceCoreAuditLogRecorder")
     public AuditLogRecorder platformGovernanceCoreAuditLogRecorder(
             PlatformGovernanceProperties properties,
-            org.springframework.beans.factory.ObjectProvider<AuditLogger> auditLogger
+            AuditLogger auditLogger
     ) {
         if (!properties.getAudit().isEnabled()) {
             return entry -> { };
         }
-        AuditLogger logger = auditLogger.getIfAvailable();
-        AuditLogRecorder delegate;
-        if (logger != null) {
-            delegate = new AuditLoggerAuditLogRecorder(logger);
-        } else {
-            delegate = new InMemoryAuditLogRecorder();
-        }
-        return new SanitizingAuditLogRecorder(delegate, serviceAuditAttributes(properties));
+        return new SanitizingAuditLogRecorder(new AuditLoggerAuditLogRecorder(auditLogger), serviceAuditAttributes(properties));
     }
 
     @Bean(name = "platformGovernanceAuditLogRecorder")
     @Primary
     public AuditLogRecorder auditLogRecorder(
+            PlatformGovernanceProperties properties,
             @Qualifier("platformGovernanceCoreAuditLogRecorder") AuditLogRecorder platformRecorder,
             org.springframework.beans.factory.ObjectProvider<AuditLogRecorder> auditLogRecorders
     ) {
-        List<AuditLogRecorder> recorders = new java.util.ArrayList<>();
-        recorders.add(platformRecorder);
         List<AuditLogRecorder> externalRecorders = auditLogRecorders.orderedStream()
                 .filter(recorder -> recorder != platformRecorder)
                 .toList();
-        if (!externalRecorders.isEmpty()) {
-            LOGGER.warn("External AuditLogRecorder bean detected. This compatibility fan-out path is deprecated "
-                    + "since 2.0.1. Use AuditSink instead. Removal planned for 3.0.0.");
+        if (externalRecorders.isEmpty()) {
+            return platformRecorder;
         }
+        if (!properties.getCompat().isAuditLogRecorderFanoutEnabled()) {
+            LOGGER.warn("External AuditLogRecorder bean detected, but compatibility fan-out is disabled. "
+                    + "Ignoring external recorders. Migrate to AuditSink or set "
+                    + "platform.governance.compat.audit-log-recorder-fanout-enabled=true temporarily.");
+            return platformRecorder;
+        }
+        LOGGER.warn("External AuditLogRecorder bean detected. This compatibility fan-out path is deprecated "
+                + "since 2.0.1. Use AuditSink instead. Removal planned for 3.0.0.");
+        List<AuditLogRecorder> recorders = new java.util.ArrayList<>();
+        recorders.add(platformRecorder);
         recorders.addAll(externalRecorders);
-        return recorders.size() == 1 ? platformRecorder : new CompositeAuditLogRecorder(recorders);
+        return new CompositeAuditLogRecorder(recorders);
     }
 
     @Bean
@@ -374,6 +377,14 @@ public class PlatformGovernanceAutoConfiguration {
                         .environment(properties.getAudit().getEnvironment())
                 .build()))
                 .build();
+    }
+
+    private static AuditSink defaultAuditSink(PlatformGovernanceProperties properties) {
+        if (properties.getAudit().isEnabled()) {
+            LOGGER.warn("No AuditSink bean detected. Falling back to LoggingAuditSink so governance audit events are "
+                    + "visible in application logs. Register an AuditSink bean for durable delivery.");
+        }
+        return new LoggingAuditSink();
     }
 
     private static Map<String, String> serviceAuditAttributes(PlatformGovernanceProperties properties) {

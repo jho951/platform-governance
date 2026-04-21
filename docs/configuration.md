@@ -34,6 +34,7 @@
 - `operational.require-policy-config-in-enforcing-mode`
 - `operational.require-fatal-handler-failures-in-production`
 - `operational.allow-ignore-audit-failure-policy-in-production`
+- `compat.audit-log-recorder-fanout-enabled`
 
 ## 서비스 역할 preset
 
@@ -42,10 +43,10 @@
 | Preset | 용도 |
 | --- | --- |
 | `GENERAL` | 직접 모든 설정을 고르는 기본값 |
-| `IDENTITY_SERVICE` | auth-server 같은 identity audit 중심 서비스 |
-| `POLICY_DECISION_SERVICE` | authz-server 같은 정책 결정 서비스 |
-| `RESOURCE_SERVICE` | user/block 같은 resource API 서비스 |
-| `OBSERVABILITY_SERVICE` | monitor처럼 감사/관측 중심 서비스 |
+| `IDENTITY_SERVICE` | `auth-service` 같은 identity audit 중심 서비스 |
+| `POLICY_DECISION_SERVICE` | `authz-service` 같은 정책 결정 서비스 |
+| `RESOURCE_SERVICE` | `user-service`, `editor-service` 같은 resource API 서비스 |
+| `OBSERVABILITY_SERVICE` | `monitoring-service` 같은 감사/관측 중심 서비스 |
 
 Preset은 명시적으로 설정한 값은 존중하고, 설정하지 않은 운영 기본값만 보강한다.
 
@@ -56,7 +57,7 @@ platform:
   governance:
     service-role-preset: policy-decision-service
     audit:
-      service-name: authz-server
+      service-name: authz-service
       environment: prod
 ```
 
@@ -64,16 +65,27 @@ platform:
 
 | 3계층 서비스 | Preset |
 | --- | --- |
-| `auth-server` | `identity-service` |
-| `authz-server` | `policy-decision-service` |
-| `user-server` | `resource-service` |
-| `block-server` | `resource-service` |
-| `monitor-server` | `observability-service` |
+| `auth-service` | `identity-service` |
+| `authz-service` | `policy-decision-service` |
+| `user-service` | `resource-service` |
+| `editor-service` | `resource-service` |
+| `monitoring-service` | `observability-service` |
+
+Preset별 운영 기본값:
+
+| Preset | 운영 기본값 방향 |
+| --- | --- |
+| `IDENTITY_SERVICE` | identity audit validation과 fail-closed audit을 유지하고, audit 중심 서비스가 config source 없이도 시작 가능하게 완화 |
+| `POLICY_DECISION_SERVICE` | strict engine, `DENY` violation, fatal handler failure를 기본으로 강제 |
+| `RESOURCE_SERVICE` | resource API의 정책 평가를 enforcing 방향으로 유지 |
+| `OBSERVABILITY_SERVICE` | audit/alert 중심 운영을 허용하되 service identity와 sink 요구사항은 유지 |
+| `GENERAL` | preset 보강 없이 명시 설정을 그대로 사용 |
 
 ## 기본 동작
 
 - audit는 기본 활성화
-- audit logger는 `audit-log-core`의 기본 구현을 사용하고, 등록된 `AuditSink`가 있으면 fan-out 한다.
+- audit logger는 `audit-log-core`의 기본 구현을 사용하고, 등록된 `AuditSink`가 있으면 composite delivery를 사용한다.
+- 등록된 `AuditSink`가 없으면 `platform-governance-audit`의 `LoggingAuditSink` fallback으로 governance audit을 애플리케이션 로그에 남긴다.
 - identity audit는 `IdentityAuditRecorder` 공개 API를 제공하고 내부에서 audit library의 `AuditLogger`로 매핑한다.
 - `MdcAuditContextResolver`가 MDC의 `traceId`, `requestId`, `clientIp`, `userAgent`를 기본 correlation 값으로 연결한다.
 - policy config는 `policy-config`의 `PolicyResolver` 기반 기본 소스를 제공한다.
@@ -86,6 +98,8 @@ platform:
 - policy change recorder는 기본적으로 audit에 정책 변경 이벤트를 기록한다.
 - violation handler는 기본적으로 audit에 위반 대응 결과를 기록한다.
 - violation handler 실패는 기본적으로 감사에 남기고 원래 verdict를 유지한다.
+- 외부 `AuditLogRecorder` bean은 기본적으로 무시한다. 임시 migration이 필요할 때만 `platform.governance.compat.audit-log-recorder-fanout-enabled=true`로 deprecated compat fan-out을 켠다.
+- `GovernancePolicyService` bean 직접 등록은 지원하지 않으며 시작 시 실패한다.
 - `prod` 또는 `production` profile에서는 운영 위험 설정을 기본 fail-fast로 막는다.
 
 ## 운영 fail-fast
@@ -100,7 +114,7 @@ platform:
 - 운영 profile에서 `audit.enabled=false`는 기본적으로 실패한다.
 - 운영 profile에서 `engine.strict=false`는 기본적으로 실패한다.
 - 운영 profile에서 위반 대응 강도가 약한 `violation.action=AUDIT_ONLY` 또는 `ALERT`는 기본적으로 실패한다.
-- 운영 profile에서 `AuditSink` bean이 하나도 없으면 기본적으로 실패한다.
+- 운영 profile에서 명시적 `AuditSink` bean이 하나도 없으면 기본적으로 실패한다.
 - 운영 profile에서 `AuditContextResolver` bean이 하나도 없으면 기본적으로 실패한다.
 - 운영 profile에서 `audit.service-name` 또는 `audit.environment`가 없으면 기본적으로 실패한다.
 - active profile과 `audit.environment`의 운영/비운영 의미가 충돌하면 기본적으로 실패한다.
@@ -111,7 +125,8 @@ platform:
 - 운영 profile에서 `violation.handler-failure-fatal=false`는 기본적으로 실패한다.
 
 운영 감사 출력 대상의 공식 production SPI는 `AuditSink` bean이다.
-`AuditLogRecorder`는 governance event를 audit pipeline으로 넘기는 내부 adapter다. 외부 `AuditLogRecorder` fan-out은 2.x 호환 경로로 유지하지만 2.0.1부터 deprecated이며 3.0.0에서 제거한다. 새 production 출력 대상은 `AuditSink`만 사용한다.
+`platform-governance-audit`는 ready-made `LoggingAuditSink`를 제공하며, explicit sink가 없을 때 dev/test 기본 fallback으로 사용한다.
+`AuditLogRecorder`는 governance event를 audit pipeline으로 넘기는 내부 adapter다. 외부 `AuditLogRecorder` fan-out은 기본 비활성이며, `platform.governance.compat.audit-log-recorder-fanout-enabled=true`일 때만 2.x 임시 compat 경로로 허용한다. 이 경로는 2.0.1부터 deprecated이며 3.0.0에서 제거한다.
 
 서비스가 의도적으로 다른 운영 정책을 선택해야 하면 `operational.allow-*` 또는 `operational.require-*` 속성으로 명시적으로 완화한다.
 `operational.fail-fast-enabled=false`는 운영 위험 설정 검증의 마지막 탈출구로만 사용하며, 항상 검증 항목은 우회하지 않는다.
@@ -154,6 +169,8 @@ platform:
     feature-flags:
       store: memory
       cache-ttl-millis: 3000
+    compat:
+      audit-log-recorder-fanout-enabled: false
     engine:
       strict: false
       failure-policy: FAIL_CLOSED

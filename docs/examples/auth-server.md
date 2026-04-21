@@ -1,6 +1,6 @@
-# Auth Server Example
+# Auth Service Example
 
-auth-server는 identity audit 중심 서비스로 시작하되, 내부 caller 정책이나 admin IP 정책처럼 거부 흐름이 필요한 지점에 governance plugin을 붙인다.
+`auth-service`는 identity audit 중심 서비스로 시작하되, 내부 caller 정책이나 admin IP 정책처럼 거부 흐름이 필요한 지점에 governance plugin을 붙인다.
 
 ## 설정
 
@@ -9,7 +9,7 @@ platform:
   governance:
     service-role-preset: identity-service
     audit:
-      service-name: auth-server
+      service-name: auth-service
       environment: prod
       failure-policy: FAIL_CLOSED
       identity:
@@ -18,7 +18,7 @@ platform:
         fail-on-validation-error: true
     policy-config:
       values:
-        auth.internal-caller.allowed: "authz-server,batch-server"
+        auth.internal-caller.allowed: "authz-service,batch-service"
         auth.admin.allowed-cidrs: "10.0.0.0/8"
     engine:
       strict: true
@@ -40,6 +40,7 @@ AuditSink auditSink(ExternalAuditClient client) {
 ```
 
 운영 profile에서는 `AuditSink`, `AuditContextResolver`, `audit.service-name`, `audit.environment`가 기본 요구사항이다.
+로컬이나 개발 환경에서는 explicit sink가 없어도 `LoggingAuditSink` fallback으로 audit line이 로그에 남는다.
 
 ## 정책 plugin
 
@@ -80,7 +81,7 @@ GovernancePolicyPlugin internalCallerPolicy(PolicyConfigSource policyConfigSourc
 ```java
 GovernanceVerdict verdict = governancePolicyService.evaluate(
         new GovernanceRequest("unknown-service", "/internal/token", "internal-call", Map.of(), Instant.now()),
-        new GovernanceContext("auth-server", "prod", Map.of())
+        new GovernanceContext("auth-service", "prod", Map.of())
 );
 
 if (!verdict.allowed()) {
@@ -96,8 +97,8 @@ if (!verdict.allowed()) {
 policyChangeRecorder.record(new PolicyChangeEvent(
         "operator-1",
         "auth.internal-caller.allowed",
-        "authz-server",
-        "authz-server,batch-server",
+        "authz-service",
+        "authz-service,batch-service",
         "allow batch token rotation",
         Map.of("ticket", "SEC-1234"),
         Instant.now()

@@ -69,21 +69,47 @@ class PlatformGovernanceAutoConfigurationTest {
 
     @Test
     void auditRecorderExists() {
-        AuditLogger auditLogger = configuration.platformGovernanceAuditLogger(emptyProvider(), emptyProvider(), emptyProvider());
+        PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
+        AuditLogger auditLogger = configuration.platformGovernanceAuditLogger(
+                properties,
+                emptyProvider(),
+                emptyProvider(),
+                emptyProvider()
+        );
         AuditLogRecorder coreRecorder = configuration.platformGovernanceCoreAuditLogRecorder(
-                new PlatformGovernanceProperties(),
-                provider(auditLogger)
+                properties,
+                auditLogger
         );
 
-        assertNotNull(configuration.auditLogRecorder(coreRecorder, provider(coreRecorder)));
+        assertNotNull(configuration.auditLogRecorder(properties, coreRecorder, provider(coreRecorder)));
     }
 
     @Test
-    void auditRecorderFansOutToUserRecorders() {
+    void auditRecorderIgnoresUserRecordersUnlessCompatFanoutIsEnabled() {
         List<String> categories = new ArrayList<>();
+        PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
         AuditLogRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
         AuditLogRecorder userRecorder = entry -> categories.add("user:" + entry.category());
-        AuditLogRecorder recorder = configuration.auditLogRecorder(coreRecorder, provider(userRecorder));
+        AuditLogRecorder recorder = configuration.auditLogRecorder(properties, coreRecorder, provider(userRecorder));
+
+        recorder.record(new AuditEntry(
+                "governance",
+                "policy evaluated",
+                Map.of(),
+                Instant.parse("2026-01-01T00:00:00Z")
+        ));
+
+        assertEquals(List.of("platform:governance"), categories);
+    }
+
+    @Test
+    void auditRecorderFansOutToUserRecordersWhenCompatFanoutIsEnabled() {
+        List<String> categories = new ArrayList<>();
+        PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
+        properties.getCompat().setAuditLogRecorderFanoutEnabled(true);
+        AuditLogRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
+        AuditLogRecorder userRecorder = entry -> categories.add("user:" + entry.category());
+        AuditLogRecorder recorder = configuration.auditLogRecorder(properties, coreRecorder, provider(userRecorder));
 
         recorder.record(new AuditEntry(
                 "governance",
@@ -97,7 +123,12 @@ class PlatformGovernanceAutoConfigurationTest {
 
     @Test
     void identityAuditRecorderExists() {
-        AuditLogger auditLogger = configuration.platformGovernanceAuditLogger(emptyProvider(), emptyProvider(), emptyProvider());
+        AuditLogger auditLogger = configuration.platformGovernanceAuditLogger(
+                new PlatformGovernanceProperties(),
+                emptyProvider(),
+                emptyProvider(),
+                emptyProvider()
+        );
 
         IdentityAuditRecorder recorder = configuration.identityAuditRecorder(
                 new PlatformGovernanceProperties(),
@@ -494,21 +525,12 @@ class PlatformGovernanceAutoConfigurationTest {
     }
 
     @Test
-    void platformGovernancePolicyServiceRemainsPrimaryWhenUserDefinesSameType() {
+    void autoConfigurationFailsWhenUserDefinesGovernancePolicyService() {
         contextRunner
                 .withUserConfiguration(CustomGovernancePolicyServiceConfiguration.class)
                 .run(context -> {
-                    GovernancePolicyService service = context.getBean(GovernancePolicyService.class);
-                    CapturingAuditLogRecorder auditLogRecorder = context.getBean(CapturingAuditLogRecorder.class);
-
-                    GovernanceVerdict verdict = service.evaluate(
-                            new GovernanceRequest("user-1", "/resource", "read", Map.of(), Instant.parse("2026-01-01T00:00:00Z")),
-                            new GovernanceContext("actor-1", "test", Map.of())
-                    );
-
-                    assertEquals(GovernanceDecision.DENY, verdict.decision());
-                    assertEquals("user-service", verdict.policy());
-                    assertEquals("governance", auditLogRecorder.entries.get(0).category());
+                    assertNotNull(context.getStartupFailure());
+                    assertTrue(context.getStartupFailure().getMessage().contains("Custom GovernancePolicyService beans are not supported"));
                 });
     }
 
@@ -628,22 +650,8 @@ class PlatformGovernanceAutoConfigurationTest {
     @Configuration(proxyBeanMethods = false)
     static class CustomGovernancePolicyServiceConfiguration {
         @Bean
-        CapturingAuditLogRecorder capturingAuditLogRecorder() {
-            return new CapturingAuditLogRecorder();
-        }
-
-        @Bean
         GovernancePolicyService userGovernancePolicyService() {
             return (request, context) -> GovernanceVerdict.deny("user-service", "custom service should not be primary");
-        }
-    }
-
-    static class CapturingAuditLogRecorder implements AuditLogRecorder {
-        private final List<AuditEntry> entries = new ArrayList<>();
-
-        @Override
-        public void record(AuditEntry entry) {
-            entries.add(entry);
         }
     }
 }

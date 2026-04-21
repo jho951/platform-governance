@@ -23,6 +23,7 @@ public class PlatformGovernanceProperties {
     private final Engine engine = new Engine();
     private final Violation violation = new Violation();
     private final Operational operational = new Operational();
+    private final Compat compat = new Compat();
 
     public boolean isEnabled() {
         return enabled;
@@ -73,6 +74,10 @@ public class PlatformGovernanceProperties {
 
     public Operational getOperational() {
         return operational;
+    }
+
+    public Compat getCompat() {
+        return compat;
     }
 
     public static class Audit {
@@ -517,6 +522,18 @@ public class PlatformGovernanceProperties {
 
         public void setAllowIgnoreAuditFailurePolicyInProduction(boolean allowIgnoreAuditFailurePolicyInProduction) {
             this.allowIgnoreAuditFailurePolicyInProduction = allowIgnoreAuditFailurePolicyInProduction;
+        }
+    }
+
+    public static class Compat {
+        private boolean auditLogRecorderFanoutEnabled = false;
+
+        public boolean isAuditLogRecorderFanoutEnabled() {
+            return auditLogRecorderFanoutEnabled;
+        }
+
+        public void setAuditLogRecorderFanoutEnabled(boolean auditLogRecorderFanoutEnabled) {
+            this.auditLogRecorderFanoutEnabled = auditLogRecorderFanoutEnabled;
         }
     }
 }
