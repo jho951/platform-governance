@@ -10,11 +10,11 @@
 
 - `platform-governance-api`: 외부 계약
 - `platform-governance-bom`: private consumer용 버전 정렬
-- `platform-governance-audit`: audit adapter
-- `platform-governance-config`: config adapter
+- `platform-governance-adapter-auditlog`: audit adapter
+- `platform-governance-adapter-policyconfig`: config adapter
 - `platform-governance-core`: pure Java reference engine
 - `platform-governance-engine`: platform `GovernancePolicyPlugin` chain 기반 평가 엔진
-- `platform-governance-spring`: Spring 자동 구성
+- `platform-governance-autoconfigure`: Spring 자동 구성
 - `platform-governance-starter`: 3계층 공식 Spring Boot 진입점
 - `platform-governance-common-test`: 테스트 픽스처
 - `platform-governance-samples`: 배포 제외 smoke test/소비 예제

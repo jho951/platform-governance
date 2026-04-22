@@ -85,7 +85,7 @@ Preset별 운영 기본값:
 
 - audit는 기본 활성화
 - audit logger는 `audit-log-core`의 기본 구현을 사용하고, 등록된 `AuditSink`가 있으면 composite delivery를 사용한다.
-- 등록된 `AuditSink`가 없으면 `platform-governance-audit`의 `LoggingAuditSink` fallback으로 governance audit을 애플리케이션 로그에 남긴다.
+- 등록된 `AuditSink`가 없으면 `platform-governance-adapter-auditlog`의 `LoggingAuditSink` fallback으로 governance audit을 애플리케이션 로그에 남긴다.
 - identity audit는 `IdentityAuditRecorder` 공개 API를 제공하고 내부에서 audit library의 `AuditLogger`로 매핑한다.
 - `MdcAuditContextResolver`가 MDC의 `traceId`, `requestId`, `clientIp`, `userAgent`를 기본 correlation 값으로 연결한다.
 - policy config는 `policy-config`의 `PolicyResolver` 기반 기본 소스를 제공한다.
@@ -125,7 +125,7 @@ Preset별 운영 기본값:
 - 운영 profile에서 `violation.handler-failure-fatal=false`는 기본적으로 실패한다.
 
 운영 감사 출력 대상의 공식 production SPI는 `AuditSink` bean이다.
-`platform-governance-audit`는 ready-made `LoggingAuditSink`를 제공하며, explicit sink가 없을 때 dev/test 기본 fallback으로 사용한다.
+`platform-governance-adapter-auditlog`는 ready-made `LoggingAuditSink`를 제공하며, explicit sink가 없을 때 dev/test 기본 fallback으로 사용한다.
 `AuditLogRecorder`는 governance event를 audit pipeline으로 넘기는 내부 adapter다. 외부 `AuditLogRecorder` fan-out은 기본 비활성이며, `platform.governance.compat.audit-log-recorder-fanout-enabled=true`일 때만 2.x 임시 compat 경로로 허용한다. 이 경로는 2.0.1부터 deprecated이며 3.0.0에서 제거한다.
 
 서비스가 의도적으로 다른 운영 정책을 선택해야 하면 `operational.allow-*` 또는 `operational.require-*` 속성으로 명시적으로 완화한다.

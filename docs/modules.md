@@ -4,16 +4,16 @@
 
 - `platform-governance-api`: 요청, context, verdict, identity audit, config 계약
 - `platform-governance-bom`: private consumer용 dependency constraints
-- `platform-governance-audit`: `audit-log` 기반 audit recorder adapter
-- `platform-governance-config`: `policy-config` 기반 config source adapter
+- `platform-governance-adapter-auditlog`: `audit-log` 기반 audit recorder adapter
+- `platform-governance-adapter-policyconfig`: `policy-config` 기반 config source adapter
 - `platform-governance-core`: Spring/audit/violation wrapper가 없는 pure Java reference engine
 - `platform-governance-engine`: platform `GovernancePolicyPlugin` chain 기반 평가 엔진
-- `platform-governance-spring`: Spring boot auto-configuration과 운영 fail-fast 검증
+- `platform-governance-autoconfigure`: Spring boot auto-configuration과 운영 fail-fast 검증
 - `platform-governance-starter`: 3계층 공식 Spring Boot starter 진입점
 - `platform-governance-common-test`: 테스트 픽스처
 - `platform-governance-samples`: 공식 BOM/starter 조합 검증 샘플
 
-`platform-governance-spring`은 `service-role-preset`도 적용한다. preset은 3계층 서비스 이름을 보지 않고, identity/policy/resource/observability 같은 주 역할만 사용한다.
+`platform-governance-autoconfigure`는 `service-role-preset`도 적용한다. preset은 3계층 서비스 이름을 보지 않고, identity/policy/resource/observability 같은 주 역할만 사용한다.
 
 ## 조합 규칙
 

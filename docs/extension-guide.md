@@ -3,7 +3,7 @@
 ## 새 policy plugin 추가
 
 1. 정책 평가 엔진 확장은 `platform-governance-engine` 또는 별도 plugin module에 `GovernancePolicyPlugin` 구현을 추가한다.
-2. `platform-governance-spring`에서 조건부 빈으로 등록한다.
+2. `platform-governance-autoconfigure`에서 조건부 빈으로 등록한다.
 3. `docs/governance-model.md`에 평가 순서를 추가한다.
 4. `docs/modules.md`에 역할을 추가한다.
 
@@ -24,7 +24,7 @@
 - `GovernancePolicyPlugin`
 - `GovernanceDecisionEngine`
 - `AuditSink`는 production 감사 출력 대상의 공식 SPI다.
-- `LoggingAuditSink`는 `platform-governance-audit`가 제공하는 ready-made sink다.
+- `LoggingAuditSink`는 `platform-governance-adapter-auditlog`가 제공하는 ready-made sink다.
 - `AuditLogRecorder`는 platform 내부 adapter다. 외부 fan-out은 기본 비활성이며, `platform.governance.compat.audit-log-recorder-fanout-enabled=true`일 때만 2.x 임시 compat 경로로 허용한다. 이 경로는 2.0.1부터 deprecated이며 3.0.0에서 제거한다.
 - `IdentityAuditRecorder`
 - `IdentityAuditCustomizer`
@@ -36,7 +36,7 @@
 - `PolicyResolver`
 - `Clock`
 
-`platform-governance-spring`은 위 bean들을 기본 등록하고, platform audit recorder는 `AuditSink`로 delivery를 위임한다.
+`platform-governance-autoconfigure`는 위 bean들을 기본 등록하고, platform audit recorder는 `AuditSink`로 delivery를 위임한다.
 서비스는 `GovernancePolicyPlugin` 또는 `GovernanceDecisionEngine`을 등록해 도메인별 정책 판단만 바꾼다.
 `GovernancePolicyService`는 audit 기록, violation handling, wrapper 수준의 공통 골격을 포함하므로 공식 override point가 아니다.
 사용자가 `GovernancePolicyService` bean을 등록하면 startup fail-fast로 막는다.
