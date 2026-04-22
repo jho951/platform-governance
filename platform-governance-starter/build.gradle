@@ -1,5 +1,5 @@
 dependencies {
-    api project(':platform-governance-spring')
+    api project(':platform-governance-autoconfigure')
     api "org.springframework:spring-context:${rootProject.springFrameworkVersion}"
     api "org.springframework.boot:spring-boot-autoconfigure:${rootProject.springBootVersion}"
 }

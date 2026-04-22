@@ -2,14 +2,18 @@ rootProject.name = 'platform-governance'
 
 include 'platform-governance-bom'
 include 'platform-governance-api'
-include 'platform-governance-audit'
-include 'platform-governance-config'
+include 'platform-governance-adapter-auditlog'
+include 'platform-governance-adapter-policyconfig'
 include 'platform-governance-core'
 include 'platform-governance-engine'
-include 'platform-governance-spring'
+include 'platform-governance-autoconfigure'
 include 'platform-governance-starter'
 include 'platform-governance-common-test'
 include 'platform-governance-samples'
+
+project(':platform-governance-adapter-auditlog').projectDir = file('platform-governance-audit')
+project(':platform-governance-adapter-policyconfig').projectDir = file('platform-governance-config')
+project(':platform-governance-autoconfigure').projectDir = file('platform-governance-spring')
 
 def layer1Roots = [
         [path: file('../../module/audit-log'), substitutions: [

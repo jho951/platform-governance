@@ -13,11 +13,11 @@ javaPlatform {
 dependencies {
     constraints {
         api project(':platform-governance-api')
-        api project(':platform-governance-audit')
-        api project(':platform-governance-config')
+        api project(':platform-governance-adapter-auditlog')
+        api project(':platform-governance-adapter-policyconfig')
         api project(':platform-governance-core')
         api project(':platform-governance-engine')
-        api project(':platform-governance-spring')
+        api project(':platform-governance-autoconfigure')
         api project(':platform-governance-starter')
         api project(':platform-governance-common-test')
 

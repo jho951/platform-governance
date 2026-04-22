@@ -1,7 +1,7 @@
 dependencies {
     api project(':platform-governance-api')
-    api project(':platform-governance-audit')
-    api project(':platform-governance-config')
+    api project(':platform-governance-adapter-auditlog')
+    api project(':platform-governance-adapter-policyconfig')
     api project(':platform-governance-engine')
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:${rootProject.junitVersion}"
