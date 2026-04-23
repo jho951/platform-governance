@@ -34,7 +34,6 @@
 - `operational.require-policy-config-in-enforcing-mode`
 - `operational.require-fatal-handler-failures-in-production`
 - `operational.allow-ignore-audit-failure-policy-in-production`
-- `compat.audit-log-recorder-fanout-enabled`
 
 ## 서비스 역할 preset
 
@@ -98,7 +97,7 @@ Preset별 운영 기본값:
 - policy change recorder는 기본적으로 audit에 정책 변경 이벤트를 기록한다.
 - violation handler는 기본적으로 audit에 위반 대응 결과를 기록한다.
 - violation handler 실패는 기본적으로 감사에 남기고 원래 verdict를 유지한다.
-- 외부 `AuditLogRecorder` bean은 기본적으로 무시한다. 임시 migration이 필요할 때만 `platform.governance.compat.audit-log-recorder-fanout-enabled=true`로 deprecated compat fan-out을 켠다.
+- 외부 `AuditLogRecorder` bean은 기본적으로 무시한다. 서비스 확장은 `AuditSink`를 사용한다.
 - `GovernancePolicyService` bean 직접 등록은 지원하지 않으며 시작 시 실패한다.
 - `prod` 또는 `production` profile에서는 운영 위험 설정을 기본 fail-fast로 막는다.
 
@@ -126,7 +125,7 @@ Preset별 운영 기본값:
 
 운영 감사 출력 대상의 공식 production SPI는 `AuditSink` bean이다.
 `platform-governance-adapter-auditlog`는 ready-made `LoggingAuditSink`를 제공하며, explicit sink가 없을 때 dev/test 기본 fallback으로 사용한다.
-`AuditLogRecorder`는 governance event를 audit pipeline으로 넘기는 내부 adapter다. 외부 `AuditLogRecorder` fan-out은 기본 비활성이며, `platform.governance.compat.audit-log-recorder-fanout-enabled=true`일 때만 2.x 임시 compat 경로로 허용한다. 이 경로는 2.0.1부터 deprecated이며 3.0.0에서 제거한다.
+`AuditLogRecorder`는 governance event를 audit pipeline으로 넘기는 내부 adapter다. 서비스 확장점은 `AuditSink`이며, 외부 `AuditLogRecorder` 구현은 mainline starter에서 무시한다.
 
 서비스가 의도적으로 다른 운영 정책을 선택해야 하면 `operational.allow-*` 또는 `operational.require-*` 속성으로 명시적으로 완화한다.
 `operational.fail-fast-enabled=false`는 운영 위험 설정 검증의 마지막 탈출구로만 사용하며, 항상 검증 항목은 우회하지 않는다.
@@ -169,8 +168,6 @@ platform:
     feature-flags:
       store: memory
       cache-ttl-millis: 3000
-    compat:
-      audit-log-recorder-fanout-enabled: false
     engine:
       strict: false
       failure-policy: FAIL_CLOSED

@@ -29,7 +29,6 @@ import io.github.jho951.platform.governance.api.ViolationHandler;
 import io.github.jho951.platform.governance.audit.AuditLoggerAuditLogRecorder;
 import io.github.jho951.platform.governance.audit.AuditPolicyChangeRecorder;
 import io.github.jho951.platform.governance.audit.AuditViolationHandler;
-import io.github.jho951.platform.governance.audit.CompositeAuditLogRecorder;
 import io.github.jho951.platform.governance.audit.DefaultIdentityAuditRecorder;
 import io.github.jho951.platform.governance.audit.IdentityAuditEventValidator;
 import io.github.jho951.platform.governance.audit.LoggingAuditSink;
@@ -115,7 +114,7 @@ public class PlatformGovernanceAutoConfiguration {
         return new PolicyResolverPolicyConfigSource(policyResolver);
     }
 
-    @Bean
+    @Bean(name = "platformGovernanceOperationalProfileResolver")
     @ConditionalOnMissingBean
     public OperationalProfileResolver operationalProfileResolver() {
         return OperationalProfileResolver.standard();
@@ -200,18 +199,9 @@ public class PlatformGovernanceAutoConfiguration {
         if (externalRecorders.isEmpty()) {
             return platformRecorder;
         }
-        if (!properties.getCompat().isAuditLogRecorderFanoutEnabled()) {
-            LOGGER.warn("External AuditLogRecorder bean detected, but compatibility fan-out is disabled. "
-                    + "Ignoring external recorders. Migrate to AuditSink or set "
-                    + "platform.governance.compat.audit-log-recorder-fanout-enabled=true temporarily.");
-            return platformRecorder;
-        }
-        LOGGER.warn("External AuditLogRecorder bean detected. This compatibility fan-out path is deprecated "
-                + "since 2.0.1. Use AuditSink instead. Removal planned for 3.0.0.");
-        List<AuditLogRecorder> recorders = new java.util.ArrayList<>();
-        recorders.add(platformRecorder);
-        recorders.addAll(externalRecorders);
-        return new CompositeAuditLogRecorder(recorders);
+        LOGGER.warn("External AuditLogRecorder bean detected. Mainline governance starter ignores external "
+                + "recorders. Migrate to AuditSink instead.");
+        return platformRecorder;
     }
 
     @Bean

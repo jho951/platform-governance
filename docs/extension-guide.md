@@ -25,7 +25,7 @@
 - `GovernanceDecisionEngine`
 - `AuditSink`는 production 감사 출력 대상의 공식 SPI다.
 - `LoggingAuditSink`는 `platform-governance-adapter-auditlog`가 제공하는 ready-made sink다.
-- `AuditLogRecorder`는 platform 내부 adapter다. 외부 fan-out은 기본 비활성이며, `platform.governance.compat.audit-log-recorder-fanout-enabled=true`일 때만 2.x 임시 compat 경로로 허용한다. 이 경로는 2.0.1부터 deprecated이며 3.0.0에서 제거한다.
+- `AuditLogRecorder`는 platform 내부 adapter다. 서비스 확장점처럼 직접 쓰지 않는다.
 - `IdentityAuditRecorder`
 - `IdentityAuditCustomizer`
 - `AuditAttributeEnricher`

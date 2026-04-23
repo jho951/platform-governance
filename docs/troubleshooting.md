@@ -25,8 +25,7 @@
 ## External AuditLogRecorder migration
 
 외부 `AuditLogRecorder` bean은 기본적으로 무시된다.
-기존 경로를 잠시 유지해야 하면 `platform.governance.compat.audit-log-recorder-fanout-enabled=true`를 명시한다.
-이 compat fan-out은 2.0.1부터 deprecated이며 3.0.0에서 제거 예정이다.
+`AuditSink` bean으로 옮겨야 한다. mainline starter는 `AuditLogRecorder` fan-out compat를 제공하지 않는다.
 
 ## GovernancePolicyService override 실패
 

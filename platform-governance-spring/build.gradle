@@ -1,9 +1,9 @@
 dependencies {
     api project(':platform-governance-api')
-    api project(':platform-governance-adapter-auditlog')
-    api project(':platform-governance-adapter-policyconfig')
-    api project(':platform-governance-core')
-    api project(':platform-governance-engine')
+    implementation project(':platform-governance-adapter-auditlog')
+    implementation project(':platform-governance-adapter-policyconfig')
+    implementation project(':platform-governance-core')
+    implementation project(':platform-governance-engine')
 
     implementation "io.github.jho951:audit-log-core:${rootProject.auditLogVersion}"
     implementation "io.github.jho951:policy-config-core:${rootProject.policyConfigVersion}"

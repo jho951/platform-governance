@@ -138,3 +138,63 @@ subprojects {
         }
     }
 }
+
+def governancePomDependencies = { Project subproject ->
+    File pomFile = subproject.layout.buildDirectory.file('publications/mavenJava/pom-default.xml').get().asFile
+    if (!pomFile.exists()) {
+        throw new GradleException("Missing generated POM for ${subproject.path}: ${pomFile}")
+    }
+    def pom = new groovy.xml.XmlSlurper().parse(pomFile)
+    pom.dependencies.dependency.collect { dependency ->
+        [artifactId: dependency.artifactId.text(), scope: dependency.scope.text()]
+    }
+}
+
+def governanceHasCompileScope = { Map<String, String> dependency ->
+    dependency.scope == null || dependency.scope.isBlank() || dependency.scope == 'compile'
+}
+
+tasks.register('verifyPublishedSurface') {
+    notCompatibleWithConfigurationCache("verification inspects generated POM files")
+    dependsOn project(':platform-governance-starter').tasks.named('generatePomFileForMavenJavaPublication')
+    dependsOn project(':platform-governance-autoconfigure').tasks.named('generatePomFileForMavenJavaPublication')
+
+    doLast {
+        def starterDependencies = governancePomDependencies(project(':platform-governance-starter'))
+        def autoConfigurationDependencies = governancePomDependencies(project(':platform-governance-autoconfigure'))
+        [
+                'platform-governance-adapter-auditlog',
+                'platform-governance-adapter-policyconfig',
+                'platform-governance-core',
+                'platform-governance-engine'
+        ].each { artifactId ->
+            if (starterDependencies.any { dependency -> dependency.artifactId == artifactId && governanceHasCompileScope(dependency) }) {
+                throw new GradleException("platform-governance-starter leaks ${artifactId} on compile scope")
+            }
+            if (autoConfigurationDependencies.any { dependency -> dependency.artifactId == artifactId && governanceHasCompileScope(dependency) }) {
+                throw new GradleException("platform-governance-autoconfigure leaks ${artifactId} on compile scope")
+            }
+        }
+    }
+}
+
+tasks.register('verifyStarterContract') {
+    notCompatibleWithConfigurationCache("verification reads generated metadata and docs")
+    dependsOn tasks.named('verifyPublishedSurface')
+
+    doLast {
+        if (file('platform-governance-api/src/main/java/io/github/jho951/platform/governance/api/AuditLogRecorder.java').exists()) {
+            throw new GradleException("AuditLogRecorder must not be published from platform-governance-api")
+        }
+        if (!file('platform-governance-audit/src/main/java/io/github/jho951/platform/governance/api/AuditLogRecorder.java').exists()) {
+            throw new GradleException("AuditLogRecorder must live in platform-governance-adapter-auditlog")
+        }
+
+        def readme = file('README.md').text
+        ['AuditSink', 'platform-governance-adapter-auditlog'].each { token ->
+            if (!readme.contains(token)) {
+                throw new GradleException("README.md must mention ${token}")
+            }
+        }
+    }
+}

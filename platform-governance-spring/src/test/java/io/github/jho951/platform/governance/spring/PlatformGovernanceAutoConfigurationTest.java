@@ -85,7 +85,7 @@ class PlatformGovernanceAutoConfigurationTest {
     }
 
     @Test
-    void auditRecorderIgnoresUserRecordersUnlessCompatFanoutIsEnabled() {
+    void auditRecorderIgnoresUserRecordersOutsidePlatformOwnedAuditSinkSurface() {
         List<String> categories = new ArrayList<>();
         PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
         AuditLogRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
@@ -100,25 +100,6 @@ class PlatformGovernanceAutoConfigurationTest {
         ));
 
         assertEquals(List.of("platform:governance"), categories);
-    }
-
-    @Test
-    void auditRecorderFansOutToUserRecordersWhenCompatFanoutIsEnabled() {
-        List<String> categories = new ArrayList<>();
-        PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
-        properties.getCompat().setAuditLogRecorderFanoutEnabled(true);
-        AuditLogRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
-        AuditLogRecorder userRecorder = entry -> categories.add("user:" + entry.category());
-        AuditLogRecorder recorder = configuration.auditLogRecorder(properties, coreRecorder, provider(userRecorder));
-
-        recorder.record(new AuditEntry(
-                "governance",
-                "policy evaluated",
-                Map.of(),
-                Instant.parse("2026-01-01T00:00:00Z")
-        ));
-
-        assertEquals(List.of("platform:governance", "user:governance"), categories);
     }
 
     @Test
