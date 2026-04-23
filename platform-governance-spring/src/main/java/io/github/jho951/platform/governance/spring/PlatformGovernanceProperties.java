@@ -56,7 +56,7 @@ public class PlatformGovernanceProperties {
      * @deprecated since 2.0.1. Use {@link #getFeatureFlags()} and the
      * {@code platform.governance.feature-flags.*} prefix. The legacy
      * {@code platform.governance.plugin-policy-engine.*} prefix will be removed
-     * in 3.0.0.
+     * in 3.1.0.
      */
     @Deprecated(since = "2.0.1", forRemoval = true)
     public PluginPolicyEngine getPluginPolicyEngine() {
@@ -287,7 +287,7 @@ public class PlatformGovernanceProperties {
     /**
      * @deprecated since 2.0.1. Use {@link FeatureFlags}. This class remains
      * only for the legacy {@code platform.governance.plugin-policy-engine.*}
-     * prefix and will be removed in 3.0.0.
+     * prefix and will be removed in 3.1.0.
      */
     @Deprecated(since = "2.0.1", forRemoval = true)
     public static class PluginPolicyEngine extends FeatureFlags {

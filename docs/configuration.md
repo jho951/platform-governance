@@ -89,7 +89,7 @@ Preset별 운영 기본값:
 - `MdcAuditContextResolver`가 MDC의 `traceId`, `requestId`, `clientIp`, `userAgent`를 기본 correlation 값으로 연결한다.
 - policy config는 `policy-config`의 `PolicyResolver` 기반 기본 소스를 제공한다.
 - `feature-flags` 설정은 `FeatureFlagClient` 기본 bean을 제공하기 위한 config 호환 기준으로 사용한다.
-- 기존 `plugin-policy-engine.*` prefix는 2.0.1 deprecated alias이며 3.0.0에서 제거한다.
+- 기존 `plugin-policy-engine.*` prefix는 2.0.1 deprecated alias이며 3.1.0에서 제거한다.
 - `feature-flags.*`와 `plugin-policy-engine.*`를 동시에 사용하면 profile과 무관하게 시작에 실패한다.
 - governance decision engine은 기본적으로 등록된 `GovernancePolicyPlugin`을 bean 순서대로 순회한다.
 - 정말 전사 공통인 불변 규칙만 기본 강제로 둔다.
@@ -146,7 +146,7 @@ Preset별 운영 기본값:
 
 - `FAIL_CLOSED`: plugin exception을 `DENY`로 반환한다.
 - `FAIL_OPEN`: plugin exception을 `ALLOW`로 반환하되 reason에 실패 정보를 남긴다.
-- `AUDIT_AND_DENY`: 2.0.1 deprecated alias다. `FAIL_CLOSED`와 동일하게 동작하므로 새 설정은 `FAIL_CLOSED`를 사용한다. 3.0.0에서 제거한다.
+- `AUDIT_AND_DENY`: 2.0.1 deprecated alias다. `FAIL_CLOSED`와 동일하게 동작하므로 새 설정은 `FAIL_CLOSED`를 사용한다. 3.1.0에서 제거한다.
 
 ## 설정 예시
 

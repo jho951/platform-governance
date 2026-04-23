@@ -6,7 +6,7 @@ public enum GovernanceEngineFailurePolicy {
 
     /**
      * @deprecated since 2.0.1. Use {@link #FAIL_CLOSED}; this compatibility
-     * alias has the same runtime behavior and will be removed in 3.0.0.
+     * alias has the same runtime behavior and will be removed in 3.1.0.
      */
     @Deprecated(since = "2.0.1", forRemoval = true)
     AUDIT_AND_DENY

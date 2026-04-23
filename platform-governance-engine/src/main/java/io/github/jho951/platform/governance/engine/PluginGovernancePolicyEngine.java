@@ -14,7 +14,7 @@ import java.util.List;
  * @deprecated since 2.0.1. Use {@link PluginGovernanceDecisionEngine} as the
  * decision engine and let the Spring platform wrapper expose
  * {@link GovernancePolicyService}. This compatibility adapter will be removed
- * in 3.0.0.
+ * in 3.1.0.
  */
 @Deprecated(since = "2.0.1", forRemoval = true)
 public final class PluginGovernancePolicyEngine implements GovernancePolicyService, GovernanceDecisionEngine {

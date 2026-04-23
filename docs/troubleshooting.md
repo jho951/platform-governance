@@ -44,7 +44,7 @@ identity audit 중심 서비스라면 `service-role-preset=identity-service`를 
 ## Plugin file store 경로 누락
 
 `platform.governance.feature-flags.store=FILE`이면 `platform.governance.feature-flags.file-path`가 필요하다.
-기존 `platform.governance.plugin-policy-engine.*` prefix는 2.0.1 deprecated alias이며 3.0.0에서 제거한다.
+기존 `platform.governance.plugin-policy-engine.*` prefix는 2.0.1 deprecated alias이며 3.1.0에서 제거한다.
 새 `platform.governance.feature-flags.*` prefix와 legacy prefix를 동시에 쓰면 profile과 무관하게 시작에 실패한다.
 이 검증은 profile과 무관하게 적용되며 `platform.governance.operational.fail-fast-enabled=false`로도 우회되지 않는다.
 
