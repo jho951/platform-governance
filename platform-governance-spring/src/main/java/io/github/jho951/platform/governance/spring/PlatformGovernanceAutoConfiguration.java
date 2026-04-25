@@ -13,7 +13,8 @@ import com.policyconfig.builder.PolicyConfigs;
 import com.policyconfig.contracts.PolicyResolver;
 import io.github.jho951.platform.governance.api.AuditCorrelation;
 import io.github.jho951.platform.governance.api.AuditEntry;
-import io.github.jho951.platform.governance.api.AuditLogRecorder;
+import io.github.jho951.platform.governance.api.GovernanceAuditRecorder;
+import io.github.jho951.platform.governance.api.GovernanceAuditSink;
 import io.github.jho951.platform.governance.api.GovernanceDecisionEngine;
 import io.github.jho951.platform.governance.api.GovernanceViolation;
 import io.github.jho951.platform.governance.api.GovernancePolicyPlugin;
@@ -26,13 +27,14 @@ import io.github.jho951.platform.governance.api.PolicyChangeRecorder;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
 import io.github.jho951.platform.governance.api.OperationalProfileResolver;
 import io.github.jho951.platform.governance.api.ViolationHandler;
-import io.github.jho951.platform.governance.audit.AuditLoggerAuditLogRecorder;
+import io.github.jho951.platform.governance.audit.AuditLoggerGovernanceAuditRecorder;
 import io.github.jho951.platform.governance.audit.AuditPolicyChangeRecorder;
 import io.github.jho951.platform.governance.audit.AuditViolationHandler;
 import io.github.jho951.platform.governance.audit.DefaultIdentityAuditRecorder;
+import io.github.jho951.platform.governance.audit.GovernanceAuditSinkAuditSinkAdapter;
 import io.github.jho951.platform.governance.audit.IdentityAuditEventValidator;
 import io.github.jho951.platform.governance.audit.LoggingAuditSink;
-import io.github.jho951.platform.governance.audit.SanitizingAuditLogRecorder;
+import io.github.jho951.platform.governance.audit.SanitizingGovernanceAuditRecorder;
 import io.github.jho951.platform.governance.config.PolicyResolverPolicyConfigSource;
 import io.github.jho951.platform.governance.engine.PluginGovernanceDecisionEngine;
 import io.github.jho951.platform.governance.identity.AuditAttributeEnricher;
@@ -85,7 +87,8 @@ public class PlatformGovernanceAutoConfiguration {
                 if (bean instanceof GovernancePolicyService && !"platformGovernancePolicyService".equals(beanName)) {
                     throw new BeanCreationException(beanName,
                             "Custom GovernancePolicyService beans are not supported. Use GovernanceDecisionEngine, "
-                                    + "PolicyConfigSource, ViolationHandler, or AuditSink instead.");
+                                    + "PolicyConfigSource, ViolationHandler, GovernanceAuditSink, or "
+                                    + "GovernanceAuditRecorder instead.");
                 }
                 return bean;
             }
@@ -125,7 +128,7 @@ public class PlatformGovernanceAutoConfiguration {
     public OperationalGovernancePolicyEnforcer operationalGovernancePolicyEnforcer(
             PlatformGovernanceProperties properties,
             PolicyConfigSource policyConfigSource,
-            org.springframework.beans.factory.ObjectProvider<AuditSink> auditSinks,
+            org.springframework.beans.factory.ObjectProvider<GovernanceAuditSink> governanceAuditSinks,
             org.springframework.beans.factory.ObjectProvider<AuditContextResolver> contextResolvers,
             OperationalProfileResolver operationalProfileResolver,
             Environment environment
@@ -135,7 +138,7 @@ public class PlatformGovernanceAutoConfiguration {
                 policyConfigSource,
                 operationalProfileResolver,
                 environment.getActiveProfiles(),
-                auditSinks.orderedStream().toList().size(),
+                governanceAuditSinks.orderedStream().toList().size(),
                 contextResolvers.orderedStream().toList().size()
         );
         enforcer.enforce();
@@ -145,7 +148,7 @@ public class PlatformGovernanceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public FeatureFlagClient platformGovernanceFeatureFlagClient(PlatformGovernanceProperties properties) {
-        PlatformGovernanceProperties.FeatureFlags engine = properties.effectiveFeatureFlags();
+        PlatformGovernanceProperties.FeatureFlags engine = properties.getFeatureFlags();
         FeatureFlagConfig.Builder builder = FeatureFlagConfig.builder()
                 .store(FeatureFlagConfig.Store.valueOf(engine.getStore().name()))
                 .cacheTtl(Duration.ofMillis(engine.getCacheTtlMillis()));
@@ -161,46 +164,56 @@ public class PlatformGovernanceAutoConfiguration {
         return new MdcAuditContextResolver();
     }
 
-    @Bean
-    @ConditionalOnMissingBean
     public AuditLogger platformGovernanceAuditLogger(
             PlatformGovernanceProperties properties,
-            org.springframework.beans.factory.ObjectProvider<AuditSink> auditSinks,
+            org.springframework.beans.factory.ObjectProvider<GovernanceAuditSink> governanceAuditSinks,
             org.springframework.beans.factory.ObjectProvider<AuditContextResolver> contextResolvers,
             org.springframework.beans.factory.ObjectProvider<AuditMaskingPolicy> maskingPolicy
     ) {
-        List<AuditSink> sinks = auditSinks.orderedStream().toList();
-        AuditSink sink = sinks.isEmpty() ? defaultAuditSink(properties) : new CompositeAuditSink(sinks);
+        List<AuditSink> sinks = governanceAuditSinks.orderedStream()
+                .map(GovernanceAuditSinkAuditSinkAdapter::new)
+                .map(AuditSink.class::cast)
+                .toList();
+        AuditSink sink = sinks.isEmpty()
+                ? new GovernanceAuditSinkAuditSinkAdapter(defaultGovernanceAuditSink(properties))
+                : new CompositeAuditSink(sinks);
         return new DefaultAuditLogger(sink, contextResolvers.orderedStream().toList(), maskingPolicy.getIfAvailable());
     }
 
-    @Bean(name = "platformGovernanceCoreAuditLogRecorder")
-    @ConditionalOnMissingBean(name = "platformGovernanceCoreAuditLogRecorder")
-    public AuditLogRecorder platformGovernanceCoreAuditLogRecorder(
+    @Bean(name = "platformGovernanceCoreAuditRecorder")
+    @ConditionalOnMissingBean(name = "platformGovernanceCoreAuditRecorder")
+    public GovernanceAuditRecorder platformGovernanceCoreAuditRecorder(
             PlatformGovernanceProperties properties,
-            AuditLogger auditLogger
+            org.springframework.beans.factory.ObjectProvider<GovernanceAuditSink> governanceAuditSinks,
+            org.springframework.beans.factory.ObjectProvider<AuditContextResolver> contextResolvers,
+            org.springframework.beans.factory.ObjectProvider<AuditMaskingPolicy> maskingPolicy
     ) {
         if (!properties.getAudit().isEnabled()) {
             return entry -> { };
         }
-        return new SanitizingAuditLogRecorder(new AuditLoggerAuditLogRecorder(auditLogger), serviceAuditAttributes(properties));
+        AuditLogger auditLogger = platformGovernanceAuditLogger(
+                properties,
+                governanceAuditSinks,
+                contextResolvers,
+                maskingPolicy
+        );
+        return new SanitizingGovernanceAuditRecorder(new AuditLoggerGovernanceAuditRecorder(auditLogger), serviceAuditAttributes(properties));
     }
 
-    @Bean(name = "platformGovernanceAuditLogRecorder")
+    @Bean(name = "platformGovernanceAuditRecorder")
     @Primary
-    public AuditLogRecorder auditLogRecorder(
-            PlatformGovernanceProperties properties,
-            @Qualifier("platformGovernanceCoreAuditLogRecorder") AuditLogRecorder platformRecorder,
-            org.springframework.beans.factory.ObjectProvider<AuditLogRecorder> auditLogRecorders
+    public GovernanceAuditRecorder governanceAuditRecorder(
+            @Qualifier("platformGovernanceCoreAuditRecorder") GovernanceAuditRecorder platformRecorder,
+            org.springframework.beans.factory.ObjectProvider<GovernanceAuditRecorder> auditRecorders
     ) {
-        List<AuditLogRecorder> externalRecorders = auditLogRecorders.orderedStream()
+        List<GovernanceAuditRecorder> externalRecorders = auditRecorders.orderedStream()
                 .filter(recorder -> recorder != platformRecorder)
                 .toList();
         if (externalRecorders.isEmpty()) {
             return platformRecorder;
         }
-        LOGGER.warn("External AuditLogRecorder bean detected. Mainline governance starter ignores external "
-                + "recorders. Migrate to AuditSink instead.");
+        LOGGER.warn("External GovernanceAuditRecorder bean detected. Mainline governance starter ignores external "
+                + "recorders. Consume GovernanceAuditRecorder instead of overriding it.");
         return platformRecorder;
     }
 
@@ -208,14 +221,21 @@ public class PlatformGovernanceAutoConfiguration {
     @ConditionalOnMissingBean(IdentityAuditRecorder.class)
     public IdentityAuditRecorder identityAuditRecorder(
             PlatformGovernanceProperties properties,
-            AuditLogger auditLogger,
+            org.springframework.beans.factory.ObjectProvider<GovernanceAuditSink> governanceAuditSinks,
             org.springframework.beans.factory.ObjectProvider<IdentityAuditCustomizer> customizers,
             org.springframework.beans.factory.ObjectProvider<AuditAttributeEnricher> enrichers,
-            org.springframework.beans.factory.ObjectProvider<AuditContextResolver> contextResolvers
+            org.springframework.beans.factory.ObjectProvider<AuditContextResolver> contextResolvers,
+            org.springframework.beans.factory.ObjectProvider<AuditMaskingPolicy> maskingPolicy
     ) {
         if (!properties.getAudit().isEnabled() || !properties.getAudit().getIdentity().isEnabled()) {
             return event -> { };
         }
+        AuditLogger auditLogger = platformGovernanceAuditLogger(
+                properties,
+                governanceAuditSinks,
+                contextResolvers,
+                maskingPolicy
+        );
         List<IdentityAuditCustomizer> identityCustomizers = new java.util.ArrayList<>();
         identityCustomizers.add(serviceIdentityCustomizer(properties));
         identityCustomizers.addAll(customizers.orderedStream().toList());
@@ -233,14 +253,14 @@ public class PlatformGovernanceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(PolicyChangeRecorder.class)
-    public PolicyChangeRecorder policyChangeRecorder(AuditLogRecorder auditLogRecorder) {
-        return new AuditPolicyChangeRecorder(auditLogRecorder);
+    public PolicyChangeRecorder policyChangeRecorder(GovernanceAuditRecorder auditRecorder) {
+        return new AuditPolicyChangeRecorder(auditRecorder);
     }
 
     @Bean
     @ConditionalOnMissingBean(name = "platformGovernanceAuditViolationHandler")
-    public ViolationHandler platformGovernanceAuditViolationHandler(AuditLogRecorder auditLogRecorder) {
-        return new AuditViolationHandler(auditLogRecorder);
+    public ViolationHandler platformGovernanceAuditViolationHandler(GovernanceAuditRecorder auditRecorder) {
+        return new AuditViolationHandler(auditRecorder);
     }
 
     @Bean
@@ -261,13 +281,13 @@ public class PlatformGovernanceAutoConfiguration {
     public GovernancePolicyService governancePolicyService(
             GovernanceDecisionEngine delegate,
             PlatformGovernanceProperties properties,
-            AuditLogRecorder auditLogRecorder,
+            GovernanceAuditRecorder auditRecorder,
             List<ViolationHandler> violationHandlers
     ) {
         return (request, context) -> {
             GovernanceVerdict verdict = delegate.evaluate(request, context);
             Map<String, String> attributes = governanceAuditAttributes(request, context, verdict, properties);
-            auditLogRecorder.record(new AuditEntry(
+            auditRecorder.record(new AuditEntry(
                     "governance",
                     "policy evaluated",
                     attributes,
@@ -282,7 +302,7 @@ public class PlatformGovernanceAutoConfiguration {
                         attributes,
                         request.occurredAt()
                 );
-                handleViolation(violation, violationHandlers, auditLogRecorder, properties.getViolation().isHandlerFailureFatal());
+                handleViolation(violation, violationHandlers, auditRecorder, properties.getViolation().isHandlerFailureFatal());
             }
             return verdict;
         };
@@ -335,14 +355,14 @@ public class PlatformGovernanceAutoConfiguration {
     private static void handleViolation(
             GovernanceViolation violation,
             List<ViolationHandler> violationHandlers,
-            AuditLogRecorder auditLogRecorder,
+            GovernanceAuditRecorder auditRecorder,
             boolean handlerFailureFatal
     ) {
         for (ViolationHandler handler : violationHandlers) {
             try {
                 handler.handle(violation);
             } catch (RuntimeException exception) {
-                auditLogRecorder.record(new AuditEntry(
+                auditRecorder.record(new AuditEntry(
                         "governance-violation",
                         "violation handler failed",
                         Map.of(
@@ -369,10 +389,10 @@ public class PlatformGovernanceAutoConfiguration {
                 .build();
     }
 
-    private static AuditSink defaultAuditSink(PlatformGovernanceProperties properties) {
+    private static GovernanceAuditSink defaultGovernanceAuditSink(PlatformGovernanceProperties properties) {
         if (properties.getAudit().isEnabled()) {
-            LOGGER.warn("No AuditSink bean detected. Falling back to LoggingAuditSink so governance audit events are "
-                    + "visible in application logs. Register an AuditSink bean for durable delivery.");
+            LOGGER.warn("No GovernanceAuditSink bean detected. Falling back to LoggingAuditSink so governance audit "
+                    + "events are visible in application logs. Register a GovernanceAuditSink bean for durable delivery.");
         }
         return new LoggingAuditSink();
     }

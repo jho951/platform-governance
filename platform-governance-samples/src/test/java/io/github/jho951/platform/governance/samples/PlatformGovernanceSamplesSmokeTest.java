@@ -1,7 +1,8 @@
 package io.github.jho951.platform.governance.samples;
 
-import com.auditlog.api.AuditEvent;
-import com.auditlog.api.AuditSink;
+import io.github.jho951.platform.governance.api.AuditEntry;
+import io.github.jho951.platform.governance.api.GovernanceAuditRecorder;
+import io.github.jho951.platform.governance.api.GovernanceAuditSink;
 import io.github.jho951.platform.governance.api.GovernanceContext;
 import io.github.jho951.platform.governance.api.GovernancePolicyPlugin;
 import io.github.jho951.platform.governance.api.GovernancePolicyService;
@@ -21,12 +22,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PlatformGovernanceSamplesSmokeTest {
-    private final CapturingAuditSink capturingAuditSink = new CapturingAuditSink();
+    private final CapturingGovernanceAuditSink capturingAuditSink = new CapturingGovernanceAuditSink();
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(resolveClass(
                     "io.github.jho951.platform.governance.spring.PlatformGovernanceAutoConfiguration"
             )))
-            .withBean(AuditSink.class, () -> capturingAuditSink)
+            .withBean(GovernanceAuditSink.class, () -> capturingAuditSink)
             .withBean(PolicyConfigSource.class, () -> new FixturePolicyConfigSource(Map.of(
                     "feature.review.required", "true"
             )))
@@ -67,7 +68,7 @@ class PlatformGovernanceSamplesSmokeTest {
     }
 
     @Test
-    void officialAuditSinkSurfaceRecordsGovernanceViolations() {
+    void officialGovernanceAuditSinkSurfaceRecordsGovernanceViolations() {
         capturingAuditSink.clear();
 
         runner
@@ -93,28 +94,19 @@ class PlatformGovernanceSamplesSmokeTest {
                     );
 
                     assertThat(verdict.decision().name()).isEqualTo("DENY");
-                    assertThat(capturingAuditSink.events())
+                    assertThat(capturingAuditSink.entries())
                             .isNotEmpty()
-                            .anySatisfy(event -> assertThat(event.getAction()).isEqualTo("governance violation handled"));
+                            .anySatisfy(entry -> assertThat(entry.message()).isEqualTo("governance violation handled"));
                 });
     }
 
     @Test
-    void externalAuditLogRecorderIsIgnoredByMainlineStarter() {
+    void externalGovernanceAuditRecorderIsIgnoredByMainlineStarter() {
         capturingAuditSink.clear();
         AtomicInteger externalRecorderCalls = new AtomicInteger();
 
         runner
-                .withBean((Class<Object>) resolveClass("io.github.jho951.platform.governance.api.AuditLogRecorder"),
-                        () -> java.lang.reflect.Proxy.newProxyInstance(
-                                PlatformGovernanceSamplesSmokeTest.class.getClassLoader(),
-                                new Class<?>[]{resolveClass("io.github.jho951.platform.governance.api.AuditLogRecorder")},
-                                (proxy, method, args) -> {
-                                    if ("record".equals(method.getName())) {
-                                        externalRecorderCalls.incrementAndGet();
-                                    }
-                                    return null;
-                                }))
+                .withBean(GovernanceAuditRecorder.class, () -> entry -> externalRecorderCalls.incrementAndGet())
                 .withPropertyValues(
                         "spring.profiles.active=prod",
                         "platform.governance.audit.service-name=platform-governance-samples",
@@ -137,7 +129,7 @@ class PlatformGovernanceSamplesSmokeTest {
                     );
 
                     assertThat(externalRecorderCalls.get()).isZero();
-                    assertThat(capturingAuditSink.events()).isNotEmpty();
+                    assertThat(capturingAuditSink.entries()).isNotEmpty();
                 });
     }
 
@@ -189,20 +181,20 @@ class PlatformGovernanceSamplesSmokeTest {
         }
     }
 
-    private static final class CapturingAuditSink implements AuditSink {
-        private final CopyOnWriteArrayList<AuditEvent> events = new CopyOnWriteArrayList<>();
+    private static final class CapturingGovernanceAuditSink implements GovernanceAuditSink {
+        private final CopyOnWriteArrayList<AuditEntry> entries = new CopyOnWriteArrayList<>();
 
         @Override
-        public void write(AuditEvent event) {
-            events.add(event);
+        public void write(AuditEntry entry) {
+            entries.add(entry);
         }
 
-        java.util.List<AuditEvent> events() {
-            return java.util.List.copyOf(events);
+        java.util.List<AuditEntry> entries() {
+            return java.util.List.copyOf(entries);
         }
 
         void clear() {
-            events.clear();
+            entries.clear();
         }
     }
 }

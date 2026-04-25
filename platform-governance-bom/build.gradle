@@ -21,12 +21,6 @@ dependencies {
         api project(':platform-governance-starter')
         api project(':platform-governance-common-test')
 
-        api "io.github.jho951:audit-log-api:${rootProject.auditLogVersion}"
-        api "io.github.jho951:audit-log-core:${rootProject.auditLogVersion}"
-        api "io.github.jho951:policy-config-contracts:${rootProject.policyConfigVersion}"
-        api "io.github.jho951:policy-config-core:${rootProject.policyConfigVersion}"
-        api "io.github.jho951:policy-config-builder:${rootProject.policyConfigVersion}"
-        api "io.github.jho951:plugin-policy-engine-config:${rootProject.pluginPolicyEngineVersion}"
     }
 }
 

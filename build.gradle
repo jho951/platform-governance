@@ -150,6 +150,15 @@ def governancePomDependencies = { Project subproject ->
     }
 }
 
+def governanceManagedArtifactIds = { Project subproject ->
+    File pomFile = subproject.layout.buildDirectory.file('publications/mavenJava/pom-default.xml').get().asFile
+    if (!pomFile.exists()) {
+        throw new GradleException("Missing generated POM for ${subproject.path}: ${pomFile}")
+    }
+    def pom = new groovy.xml.XmlSlurper().parse(pomFile)
+    pom.dependencyManagement.dependencies.dependency.collect { dependency -> dependency.artifactId.text() }
+}
+
 def governanceHasCompileScope = { Map<String, String> dependency ->
     dependency.scope == null || dependency.scope.isBlank() || dependency.scope == 'compile'
 }
@@ -158,10 +167,43 @@ tasks.register('verifyPublishedSurface') {
     notCompatibleWithConfigurationCache("verification inspects generated POM files")
     dependsOn project(':platform-governance-starter').tasks.named('generatePomFileForMavenJavaPublication')
     dependsOn project(':platform-governance-autoconfigure').tasks.named('generatePomFileForMavenJavaPublication')
+    dependsOn project(':platform-governance-adapter-auditlog').tasks.named('generatePomFileForMavenJavaPublication')
+    dependsOn project(':platform-governance-adapter-policyconfig').tasks.named('generatePomFileForMavenJavaPublication')
+    dependsOn project(':platform-governance-bom').tasks.named('generatePomFileForMavenJavaPublication')
 
     doLast {
         def starterDependencies = governancePomDependencies(project(':platform-governance-starter'))
         def autoConfigurationDependencies = governancePomDependencies(project(':platform-governance-autoconfigure'))
+        def auditAdapterDependencies = governancePomDependencies(project(':platform-governance-adapter-auditlog'))
+        def policyConfigAdapterDependencies = governancePomDependencies(project(':platform-governance-adapter-policyconfig'))
+        def bomManagedArtifactIds = governanceManagedArtifactIds(project(':platform-governance-bom'))
+
+        [
+                'audit-log-api',
+                'audit-log-core'
+        ].each { artifactId ->
+            if (auditAdapterDependencies.any { dependency -> dependency.artifactId == artifactId && governanceHasCompileScope(dependency) }) {
+                throw new GradleException("platform-governance-adapter-auditlog must not leak ${artifactId} on compile scope")
+            }
+            if (bomManagedArtifactIds.contains(artifactId)) {
+                throw new GradleException("platform-governance-bom must not manage ${artifactId}")
+            }
+        }
+
+        if (policyConfigAdapterDependencies.any { dependency -> dependency.artifactId == 'policy-config-contracts' && governanceHasCompileScope(dependency) }) {
+            throw new GradleException("platform-governance-adapter-policyconfig must not leak policy-config-contracts on compile scope")
+        }
+
+        [
+                'policy-config-contracts',
+                'policy-config-core',
+                'policy-config-builder',
+                'plugin-policy-engine-config'
+        ].each { artifactId ->
+            if (bomManagedArtifactIds.contains(artifactId)) {
+                throw new GradleException("platform-governance-bom must not manage ${artifactId}")
+            }
+        }
         [
                 'platform-governance-adapter-auditlog',
                 'platform-governance-adapter-policyconfig',
@@ -183,15 +225,12 @@ tasks.register('verifyStarterContract') {
     dependsOn tasks.named('verifyPublishedSurface')
 
     doLast {
-        if (file('platform-governance-api/src/main/java/io/github/jho951/platform/governance/api/AuditLogRecorder.java').exists()) {
-            throw new GradleException("AuditLogRecorder must not be published from platform-governance-api")
-        }
-        if (!file('platform-governance-audit/src/main/java/io/github/jho951/platform/governance/api/AuditLogRecorder.java').exists()) {
-            throw new GradleException("AuditLogRecorder must live in platform-governance-adapter-auditlog")
+        if (file('platform-governance-audit/src/main/java/io/github/jho951/platform/governance/api').exists()) {
+            throw new GradleException("platform-governance-adapter-auditlog must not publish governance API types")
         }
 
         def readme = file('README.md').text
-        ['AuditSink', 'platform-governance-adapter-auditlog'].each { token ->
+        ['GovernanceAuditSink', 'GovernanceAuditRecorder', 'platform-governance-adapter-auditlog'].each { token ->
             if (!readme.contains(token)) {
                 throw new GradleException("README.md must mention ${token}")
             }

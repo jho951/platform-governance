@@ -1,7 +1,7 @@
 package io.github.jho951.platform.governance.audit;
 
 import io.github.jho951.platform.governance.api.AuditEntry;
-import io.github.jho951.platform.governance.api.AuditLogRecorder;
+import io.github.jho951.platform.governance.api.GovernanceAuditRecorder;
 import io.github.jho951.platform.governance.api.GovernanceViolation;
 import io.github.jho951.platform.governance.api.ViolationHandler;
 
@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class AuditViolationHandler implements ViolationHandler {
-    private final AuditLogRecorder auditLogRecorder;
+    private final GovernanceAuditRecorder auditRecorder;
 
-    public AuditViolationHandler(AuditLogRecorder auditLogRecorder) {
-        this.auditLogRecorder = Objects.requireNonNull(auditLogRecorder, "auditLogRecorder");
+    public AuditViolationHandler(GovernanceAuditRecorder auditRecorder) {
+        this.auditRecorder = Objects.requireNonNull(auditRecorder, "auditRecorder");
     }
 
     @Override
@@ -30,7 +30,7 @@ public final class AuditViolationHandler implements ViolationHandler {
         putIfPresent(attributes, "context.actor", violation.context().actor());
         putIfPresent(attributes, "context.environment", violation.context().environment());
 
-        auditLogRecorder.record(new AuditEntry(
+        auditRecorder.record(new AuditEntry(
                 "governance-violation",
                 "governance violation handled",
                 attributes,

@@ -1,12 +1,12 @@
 package io.github.jho951.platform.governance.spring;
 
 import com.auditlog.api.AuditLogger;
-import com.auditlog.api.AuditSink;
 import com.pluginpolicyengine.api.FeatureFlagClient;
 import com.policyconfig.contracts.PolicyKey;
 import com.policyconfig.contracts.PolicyResolver;
-import io.github.jho951.platform.governance.api.AuditLogRecorder;
 import io.github.jho951.platform.governance.api.AuditEntry;
+import io.github.jho951.platform.governance.api.GovernanceAuditRecorder;
+import io.github.jho951.platform.governance.api.GovernanceAuditSink;
 import io.github.jho951.platform.governance.api.GovernanceDecisionEngine;
 import io.github.jho951.platform.governance.api.GovernanceViolation;
 import io.github.jho951.platform.governance.api.GovernanceContext;
@@ -70,27 +70,23 @@ class PlatformGovernanceAutoConfigurationTest {
     @Test
     void auditRecorderExists() {
         PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
-        AuditLogger auditLogger = configuration.platformGovernanceAuditLogger(
+        GovernanceAuditRecorder coreRecorder = configuration.platformGovernanceCoreAuditRecorder(
                 properties,
                 emptyProvider(),
                 emptyProvider(),
                 emptyProvider()
         );
-        AuditLogRecorder coreRecorder = configuration.platformGovernanceCoreAuditLogRecorder(
-                properties,
-                auditLogger
-        );
 
-        assertNotNull(configuration.auditLogRecorder(properties, coreRecorder, provider(coreRecorder)));
+        assertNotNull(configuration.governanceAuditRecorder(coreRecorder, provider(coreRecorder)));
     }
 
     @Test
     void auditRecorderIgnoresUserRecordersOutsidePlatformOwnedAuditSinkSurface() {
         List<String> categories = new ArrayList<>();
         PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
-        AuditLogRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
-        AuditLogRecorder userRecorder = entry -> categories.add("user:" + entry.category());
-        AuditLogRecorder recorder = configuration.auditLogRecorder(properties, coreRecorder, provider(userRecorder));
+        GovernanceAuditRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
+        GovernanceAuditRecorder userRecorder = entry -> categories.add("user:" + entry.category());
+        GovernanceAuditRecorder recorder = configuration.governanceAuditRecorder(coreRecorder, provider(userRecorder));
 
         recorder.record(new AuditEntry(
                 "governance",
@@ -104,16 +100,10 @@ class PlatformGovernanceAutoConfigurationTest {
 
     @Test
     void identityAuditRecorderExists() {
-        AuditLogger auditLogger = configuration.platformGovernanceAuditLogger(
-                new PlatformGovernanceProperties(),
-                emptyProvider(),
-                emptyProvider(),
-                emptyProvider()
-        );
-
         IdentityAuditRecorder recorder = configuration.identityAuditRecorder(
                 new PlatformGovernanceProperties(),
-                auditLogger,
+                emptyProvider(),
+                emptyProvider(),
                 emptyProvider(),
                 emptyProvider(),
                 emptyProvider()
@@ -187,8 +177,8 @@ class PlatformGovernanceAutoConfigurationTest {
     @Test
     void defaultPolicyChangeRecorderWritesAuditEntry() {
         List<String> categories = new ArrayList<>();
-        AuditLogRecorder auditLogRecorder = entry -> categories.add(entry.category());
-        PolicyChangeRecorder recorder = configuration.policyChangeRecorder(auditLogRecorder);
+        GovernanceAuditRecorder auditRecorder = entry -> categories.add(entry.category());
+        PolicyChangeRecorder recorder = configuration.policyChangeRecorder(auditRecorder);
 
         recorder.record(new PolicyChangeEvent(
                 "operator-1",
@@ -337,7 +327,7 @@ class PlatformGovernanceAutoConfigurationTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class, enforcer::enforce);
 
         assertTrue(exception.getMessage().contains("engine.strict=false"));
-        assertTrue(exception.getMessage().contains("AuditSink"));
+        assertTrue(exception.getMessage().contains("GovernanceAuditSink"));
         assertTrue(exception.getMessage().contains("AuditContextResolver"));
         assertTrue(exception.getMessage().contains("audit.service-name"));
         assertTrue(exception.getMessage().contains("policy config source must be operational"));
@@ -421,32 +411,7 @@ class PlatformGovernanceAutoConfigurationTest {
                 });
     }
 
-    @Test
-    void legacyPluginPolicyEnginePrefixStillBindsAsDeprecatedAlias() {
-        contextRunner
-                .withPropertyValues(
-                        "platform.governance.operational.fail-fast-enabled=false",
-                        "platform.governance.plugin-policy-engine.store=file"
-                )
-                .run(context -> {
-                    assertNotNull(context.getStartupFailure());
-                    assertTrue(context.getStartupFailure().getMessage().contains("feature-flags.file-path"));
-                });
-    }
 
-    @Test
-    void autoConfigurationFailsWhenFeatureFlagPrefixesAreMixed() {
-        contextRunner
-                .withPropertyValues(
-                        "platform.governance.operational.fail-fast-enabled=false",
-                        "platform.governance.feature-flags.store=memory",
-                        "platform.governance.plugin-policy-engine.cache-ttl-millis=5000"
-                )
-                .run(context -> {
-                    assertNotNull(context.getStartupFailure());
-                    assertTrue(context.getStartupFailure().getMessage().contains("Mixed configuration is not supported"));
-                });
-    }
 
     @Test
     void autoConfigurationFailsForUnsafeProductionDefaults() {
@@ -472,7 +437,7 @@ class PlatformGovernanceAutoConfigurationTest {
     @Test
     void autoConfigurationFailsWhenAuditEnvironmentConflictsWithActiveProfile() {
         contextRunner
-                .withUserConfiguration(AuditSinkConfiguration.class)
+                .withUserConfiguration(GovernanceAuditSinkConfiguration.class)
                 .withPropertyValues(
                         "spring.profiles.active=prod",
                         "platform.governance.engine.strict=true",
@@ -490,7 +455,7 @@ class PlatformGovernanceAutoConfigurationTest {
     @Test
     void autoConfigurationStartsWithProductionOverridesAndRequiredBeans() {
         contextRunner
-                .withUserConfiguration(AuditSinkConfiguration.class)
+                .withUserConfiguration(GovernanceAuditSinkConfiguration.class)
                 .withPropertyValues(
                         "spring.profiles.active=prod",
                         "platform.governance.engine.strict=true",
@@ -621,10 +586,10 @@ class PlatformGovernanceAutoConfigurationTest {
     }
 
     @Configuration(proxyBeanMethods = false)
-    static class AuditSinkConfiguration {
+    static class GovernanceAuditSinkConfiguration {
         @Bean
-        AuditSink auditSink() {
-            return event -> { };
+        GovernanceAuditSink governanceAuditSink() {
+            return entry -> { };
         }
     }
 

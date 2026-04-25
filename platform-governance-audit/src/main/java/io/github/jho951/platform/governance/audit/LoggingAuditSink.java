@@ -1,7 +1,7 @@
 package io.github.jho951.platform.governance.audit;
 
-import com.auditlog.api.AuditEvent;
-import com.auditlog.api.AuditSink;
+import io.github.jho951.platform.governance.api.AuditEntry;
+import io.github.jho951.platform.governance.api.GovernanceAuditSink;
 
 import java.util.Map;
 import java.util.Objects;
@@ -10,10 +10,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Writes audit events to the application log so local and test environments do
- * not silently drop governance audits when no external sink is configured.
+ * Writes governance audit entries to the application log so local and test
+ * environments do not silently drop audit output when no external sink is
+ * configured.
  */
-public final class LoggingAuditSink implements AuditSink {
+public final class LoggingAuditSink implements GovernanceAuditSink {
     private final Logger logger;
     private final Level level;
 
@@ -27,37 +28,25 @@ public final class LoggingAuditSink implements AuditSink {
     }
 
     @Override
-    public void write(AuditEvent event) {
-        logger.log(level, () -> format(event));
+    public void write(AuditEntry entry) {
+        logger.log(level, () -> format(entry));
     }
 
-    private static String format(AuditEvent event) {
-        StringJoiner joiner = new StringJoiner(", ", "audit{", "}");
-        append(joiner, "eventId", event.getEventId());
-        append(joiner, "occurredAt", event.getOccurredAt());
-        append(joiner, "actorId", event.getActorId());
-        append(joiner, "actorType", event.getActorType());
-        append(joiner, "actorName", event.getActorName());
-        append(joiner, "eventType", event.getEventType());
-        append(joiner, "action", event.getAction());
-        append(joiner, "resourceType", event.getResourceType());
-        append(joiner, "resourceId", event.getResourceId());
-        append(joiner, "result", event.getResult());
-        append(joiner, "reason", event.getReason());
-        append(joiner, "traceId", event.getTraceId());
-        append(joiner, "requestId", event.getRequestId());
-        append(joiner, "clientIp", event.getClientIp());
-        append(joiner, "userAgent", event.getUserAgent());
-        append(joiner, "details", formatDetails(event.getDetails()));
+    private static String format(AuditEntry entry) {
+        StringJoiner joiner = new StringJoiner(", ", "governance-audit{", "}");
+        append(joiner, "category", entry.category());
+        append(joiner, "message", entry.message());
+        append(joiner, "occurredAt", entry.occurredAt());
+        append(joiner, "attributes", formatAttributes(entry.attributes()));
         return joiner.toString();
     }
 
-    private static String formatDetails(Map<String, Object> details) {
-        if (details == null || details.isEmpty()) {
+    private static String formatAttributes(Map<String, String> attributes) {
+        if (attributes == null || attributes.isEmpty()) {
             return "{}";
         }
         StringJoiner joiner = new StringJoiner(", ", "{", "}");
-        details.forEach((key, value) -> joiner.add(key + "=" + value));
+        attributes.forEach((key, value) -> joiner.add(key + "=" + value));
         return joiner.toString();
     }
 

@@ -43,12 +43,6 @@ public final class CompositePolicyConfigSource implements PolicyConfigSource {
         return sources.stream().allMatch(PolicyConfigSource::supportsSnapshot);
     }
 
-    @Override
-    @Deprecated(since = "2.0.1", forRemoval = true)
-    @SuppressWarnings("removal")
-    public boolean isOperational() {
-        return operationalStatus().isOperational();
-    }
 
     @Override
     public PolicyConfigOperationalStatus operationalStatus() {

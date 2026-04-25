@@ -4,8 +4,8 @@
 
 - `platform-governance-api`: 요청, context, verdict, identity audit, config 계약
 - `platform-governance-bom`: private consumer용 dependency constraints
-- `platform-governance-adapter-auditlog`: `audit-log` 기반 audit recorder adapter. `AuditLogRecorder` 내부 seam도 이 artifact에만 존재한다.
-- `platform-governance-adapter-policyconfig`: `policy-config` 기반 config source adapter
+- `platform-governance-adapter-auditlog`: `audit-log` 기반 audit recorder adapter. raw `audit-log` 좌표는 이 adapter 바깥 compile surface나 public BOM으로 다시 export하지 않는다.
+- `platform-governance-adapter-policyconfig`: `policy-config` 기반 config source adapter. raw `policy-config` 좌표는 이 adapter 바깥 compile surface나 public BOM으로 다시 export하지 않는다.
 - `platform-governance-core`: Spring/audit/violation wrapper가 없는 pure Java reference engine
 - `platform-governance-engine`: platform `GovernancePolicyPlugin` chain 기반 평가 엔진
 - `platform-governance-autoconfigure`: Spring boot auto-configuration과 운영 fail-fast 검증
@@ -28,7 +28,7 @@
 - 외부 기능은 `project()`가 아니라 Maven Central published artifact로 소비한다.
 - 3계층 서비스는 starter와 설정 값만 소비하며 외부 audit/config/engine library를 직접 조립하지 않는다.
 - stage-5 compile classpath 기준에서 starter는 adapter/core/engine 구현을 서비스에 직접 노출하지 않는다.
-- 서비스가 `AuditSink`, `AuditLogger`, `AuditEvent`를 코드에서 직접 import하면 `io.github.jho951:audit-log-api`를 명시적으로 추가한다.
+- 서비스는 `GovernanceAuditSink`, `GovernanceAuditRecorder`, `IdentityAuditRecorder` 같은 platform-owned audit contract를 사용한다.
 - 서비스별 차이가 필요한 부분은 설정 또는 조건부 bean으로 override 가능하게 둔다.
 - 정책 변경 기록과 위반 대응은 api 계약과 audit 기반 기본 구현을 통해 제공한다.
 - 운영 위험 설정 검증은 spring 모듈에서 수행한다.

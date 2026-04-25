@@ -23,9 +23,9 @@
 - `PolicyConfigSource`
 - `GovernancePolicyPlugin`
 - `GovernanceDecisionEngine`
-- `AuditSink`는 production 감사 출력 대상의 공식 SPI다.
+- `GovernanceAuditSink`는 production 감사 출력 대상의 공식 SPI다.
 - `LoggingAuditSink`는 `platform-governance-adapter-auditlog`가 제공하는 ready-made sink다.
-- `AuditLogRecorder`는 platform 내부 adapter다. 서비스 확장점처럼 직접 쓰지 않는다.
+- `GovernanceAuditRecorder`는 서비스와 2계층 bridge가 audit entry를 publish할 때 쓰는 공식 recorder다.
 - `IdentityAuditRecorder`
 - `IdentityAuditCustomizer`
 - `AuditAttributeEnricher`
@@ -36,7 +36,7 @@
 - `PolicyResolver`
 - `Clock`
 
-`platform-governance-autoconfigure`는 위 bean들을 기본 등록하고, platform audit recorder는 `AuditSink`로 delivery를 위임한다.
+`platform-governance-autoconfigure`는 위 bean들을 기본 등록하고, platform audit recorder는 `GovernanceAuditSink`로 delivery를 위임한다.
 서비스는 `GovernancePolicyPlugin` 또는 `GovernanceDecisionEngine`을 등록해 도메인별 정책 판단만 바꾼다.
 `GovernancePolicyService`는 audit 기록, violation handling, wrapper 수준의 공통 골격을 포함하므로 공식 override point가 아니다.
 사용자가 `GovernancePolicyService` bean을 등록하면 startup fail-fast로 막는다.
@@ -58,8 +58,8 @@
 - plugin은 결정 이유를 설명할 수 있어야 한다.
 - audit는 결과와 사유를 남겨야 한다.
 - governance audit는 정책 source 전체 snapshot이 아니라 request/context/verdict/evidence를 남긴다.
-- `auth-service` 같은 identity 서비스는 범용 `AuditLogRecorder` 대신 `IdentityAuditRecorder`를 우선 소비한다.
-- 2계층은 identity taxonomy와 required field validation을 제공하되, sink 자체는 외부 audit library의 `AuditSink`를 사용한다.
+- `auth-service` 같은 identity 서비스는 범용 `GovernanceAuditRecorder`보다 `IdentityAuditRecorder`를 우선 소비한다.
+- 2계층은 identity taxonomy와 required field validation을 제공하되, service-facing sink는 platform-owned `GovernanceAuditSink`를 사용한다.
 - 정책 변경은 `PolicyChangeRecorder`로 기록한다.
 - 위반 대응은 `ViolationHandler`를 추가하거나 override한다.
 - 운영 환경에서 fail-fast를 완화해야 한다면 `platform.governance.operational.*`에 의도를 명시한다.

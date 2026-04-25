@@ -19,7 +19,6 @@ public class PlatformGovernanceProperties {
     private final Audit audit = new Audit();
     private final PolicyConfig policyConfig = new PolicyConfig();
     private final FeatureFlags featureFlags = new FeatureFlags();
-    private final PluginPolicyEngine pluginPolicyEngine = new PluginPolicyEngine();
     private final Engine engine = new Engine();
     private final Violation violation = new Violation();
     private final Operational operational = new Operational();
@@ -52,16 +51,6 @@ public class PlatformGovernanceProperties {
         return featureFlags;
     }
 
-    /**
-     * @deprecated since 2.0.1. Use {@link #getFeatureFlags()} and the
-     * {@code platform.governance.feature-flags.*} prefix. The legacy
-     * {@code platform.governance.plugin-policy-engine.*} prefix will be removed
-     * in 3.1.0.
-     */
-    @Deprecated(since = "2.0.1", forRemoval = true)
-    public PluginPolicyEngine getPluginPolicyEngine() {
-        return pluginPolicyEngine;
-    }
 
     public Engine getEngine() {
         return engine;
@@ -201,19 +190,6 @@ public class PlatformGovernanceProperties {
         }
     }
 
-    FeatureFlags effectiveFeatureFlags() {
-        FeatureFlags effective = new FeatureFlags();
-        effective.applyStore(featureFlags.isStoreConfigured() ? featureFlags.getStore() : pluginPolicyEngine.getStore());
-        effective.applyFilePath(featureFlags.isFilePathConfigured() ? featureFlags.getFilePath() : pluginPolicyEngine.getFilePath());
-        effective.applyCacheTtlMillis(featureFlags.isCacheTtlMillisConfigured()
-                ? featureFlags.getCacheTtlMillis()
-                : pluginPolicyEngine.getCacheTtlMillis());
-        return effective;
-    }
-
-    boolean hasMixedFeatureFlagPrefixes() {
-        return featureFlags.isConfigured() && pluginPolicyEngine.isConfigured();
-    }
 
     public static class FeatureFlags {
         private Store store = Store.MEMORY;
@@ -284,14 +260,6 @@ public class PlatformGovernanceProperties {
         }
     }
 
-    /**
-     * @deprecated since 2.0.1. Use {@link FeatureFlags}. This class remains
-     * only for the legacy {@code platform.governance.plugin-policy-engine.*}
-     * prefix and will be removed in 3.1.0.
-     */
-    @Deprecated(since = "2.0.1", forRemoval = true)
-    public static class PluginPolicyEngine extends FeatureFlags {
-    }
 
     public static class Engine {
         private boolean strict = false;

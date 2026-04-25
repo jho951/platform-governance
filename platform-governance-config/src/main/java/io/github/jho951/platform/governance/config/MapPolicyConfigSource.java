@@ -27,12 +27,6 @@ public final class MapPolicyConfigSource implements PolicyConfigSource {
         return values;
     }
 
-    @Override
-    @Deprecated(since = "2.0.1", forRemoval = true)
-    @SuppressWarnings("removal")
-    public boolean isOperational() {
-        return operationalStatus().isOperational();
-    }
 
     @Override
     public PolicyConfigOperationalStatus operationalStatus() {

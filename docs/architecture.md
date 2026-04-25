@@ -28,7 +28,7 @@
 
 `plugin-policy-engine-config`는 feature flag/config 호환과 BOM 정렬을 위한 기준이다.
 현재 정책 실행 엔진은 `platform-governance-engine`의 `GovernancePolicyPlugin` chain이며, `plugin-policy-engine` 전체 runtime을 흡수 대상으로 보지 않는다.
-서비스 설정 prefix는 `platform.governance.feature-flags.*`를 사용하고, `platform.governance.plugin-policy-engine.*`는 2.0.1 deprecated alias로만 유지한다. 두 prefix를 동시에 설정하면 profile과 무관하게 시작에 실패한다.
+서비스 설정 prefix는 `platform.governance.feature-flags.*`만 사용한다.
 
 ## 책임 경계
 

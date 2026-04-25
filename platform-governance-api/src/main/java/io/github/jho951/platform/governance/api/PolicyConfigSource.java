@@ -13,24 +13,9 @@ public interface PolicyConfigSource {
     }
 
     /**
-     * Returns whether this source is safe to use for enforcing policy decisions.
-     *
-     * @deprecated since 2.0.1. Use {@link #operationalStatus()} so callers can
-     * distinguish missing configuration, unavailable backing stores, and unknown
-     * states. This method will be removed in 3.1.0.
-     */
-    @Deprecated(since = "2.0.1", forRemoval = true)
-    default boolean isOperational() {
-        return false;
-    }
-
-    /**
      * Returns the current operational readiness state for enforcing policy decisions.
      */
     default PolicyConfigOperationalStatus operationalStatus() {
-        if (isOperational()) {
-            return PolicyConfigOperationalStatus.operational("legacy isOperational=true");
-        }
-        return PolicyConfigOperationalStatus.notConfigured("legacy isOperational=false");
+        return PolicyConfigOperationalStatus.notConfigured("PolicyConfigSource did not declare an operational status");
     }
 }

@@ -30,16 +30,16 @@ platform:
 
 `identity-service` preset은 audit validation을 강하게 유지하면서, identity audit 중심 서비스가 모든 정책 값을 초기에 갖지 않아도 시작할 수 있게 운영 기본값을 보강한다. 명시한 설정은 preset이 덮어쓰지 않는다.
 
-## AuditSink 등록
+## GovernanceAuditSink 등록
 
 ```java
 @Bean
-AuditSink auditSink(ExternalAuditClient client) {
-    return event -> client.send(event);
+GovernanceAuditSink governanceAuditSink(ExternalAuditClient client) {
+    return entry -> client.send(entry);
 }
 ```
 
-운영 profile에서는 `AuditSink`, `AuditContextResolver`, `audit.service-name`, `audit.environment`가 기본 요구사항이다.
+운영 profile에서는 `GovernanceAuditSink`, `audit.service-name`, `audit.environment`가 기본 요구사항이다.
 로컬이나 개발 환경에서는 explicit sink가 없어도 `LoggingAuditSink` fallback으로 audit line이 로그에 남는다.
 
 ## 정책 plugin

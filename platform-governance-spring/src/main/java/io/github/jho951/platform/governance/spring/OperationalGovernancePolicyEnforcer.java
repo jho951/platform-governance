@@ -106,13 +106,7 @@ public final class OperationalGovernancePolicyEnforcer {
     }
 
     private void validateAlways(List<String> violations) {
-        if (properties.hasMixedFeatureFlagPrefixes()) {
-            violations.add("Detected both platform.governance.feature-flags.* and legacy "
-                    + "platform.governance.plugin-policy-engine.*. Mixed configuration is not supported. "
-                    + "Use exactly one prefix.");
-            return;
-        }
-        PlatformGovernanceProperties.FeatureFlags featureFlags = properties.effectiveFeatureFlags();
+        PlatformGovernanceProperties.FeatureFlags featureFlags = properties.getFeatureFlags();
         if (featureFlags.getStore() == PlatformGovernanceProperties.FeatureFlags.Store.FILE
                 && (featureFlags.getFilePath() == null || featureFlags.getFilePath().isBlank())) {
             violations.add("feature-flags.store=FILE requires feature-flags.file-path");
@@ -130,7 +124,7 @@ public final class OperationalGovernancePolicyEnforcer {
             violations.add("violation.action=" + properties.getViolation().getAction() + " is not allowed in production profiles");
         }
         if (properties.getAudit().isEnabled() && operational.isRequireAuditSinkInProduction() && auditSinkCount == 0) {
-            violations.add("at least one AuditSink bean is required in production profiles");
+            violations.add("at least one GovernanceAuditSink bean is required in production profiles");
         }
         if (properties.getAudit().isEnabled()
                 && operational.isRequireAuditContextResolverInProduction()

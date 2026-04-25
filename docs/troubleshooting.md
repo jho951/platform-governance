@@ -17,21 +17,21 @@
 
 ## Audit sink 누락
 
-명시적 `AuditSink` bean이 없으면 starter는 `LoggingAuditSink` fallback으로 governance audit을 애플리케이션 로그에 남긴다.
-운영 profile에서 `platform.governance.operational.require-audit-sink-in-production=true`인데 명시적 `AuditSink` bean이 없으면 기본적으로 시작에 실패한다.
-운영 감사 출력 대상은 `AuditSink`로 등록한다. 로그 기반 delivery만 필요하면 `platform-governance-adapter-auditlog`의 `LoggingAuditSink`를 bean으로 직접 등록해도 된다.
+명시적 `GovernanceAuditSink` bean이 없으면 starter는 `LoggingAuditSink` fallback으로 governance audit을 애플리케이션 로그에 남긴다.
+운영 profile에서 `platform.governance.operational.require-audit-sink-in-production=true`인데 명시적 `GovernanceAuditSink` bean이 없으면 기본적으로 시작에 실패한다.
+운영 감사 출력 대상은 `GovernanceAuditSink`로 등록한다. 로그 기반 delivery만 필요하면 `platform-governance-adapter-auditlog`의 `LoggingAuditSink`를 bean으로 직접 등록해도 된다.
 감사를 외부 sink로 보내지 않는 서비스라면 `platform.governance.operational.require-audit-sink-in-production=false`를 명시한다.
 
-## External AuditLogRecorder migration
+## GovernanceAuditRecorder override
 
-외부 `AuditLogRecorder` bean은 기본적으로 무시된다.
-`AuditSink` bean으로 옮겨야 한다. mainline starter는 `AuditLogRecorder` fan-out compat를 제공하지 않는다.
+외부 `GovernanceAuditRecorder` bean override는 기본적으로 무시된다.
+서비스 확장은 `GovernanceAuditSink` 또는 `GovernanceAuditRecorder` 사용으로 정리해야 하고, mainline starter override 경로에 기대면 안 된다.
 
 ## GovernancePolicyService override 실패
 
 `GovernancePolicyService`는 공식 override point가 아니다.
 서비스가 이 bean을 직접 등록하면 시작이 실패한다.
-정책 판단은 `GovernanceDecisionEngine` 또는 `GovernancePolicyPlugin`으로 교체하고, audit/violation/config는 `AuditSink`, `ViolationHandler`, `PolicyConfigSource`로 확장한다.
+정책 판단은 `GovernanceDecisionEngine` 또는 `GovernancePolicyPlugin`으로 교체하고, audit/violation/config는 `GovernanceAuditSink`, `GovernanceAuditRecorder`, `ViolationHandler`, `PolicyConfigSource`로 확장한다.
 
 ## Policy config 누락
 
@@ -44,8 +44,6 @@ identity audit 중심 서비스라면 `service-role-preset=identity-service`를 
 ## Plugin file store 경로 누락
 
 `platform.governance.feature-flags.store=FILE`이면 `platform.governance.feature-flags.file-path`가 필요하다.
-기존 `platform.governance.plugin-policy-engine.*` prefix는 2.0.1 deprecated alias이며 3.1.0에서 제거한다.
-새 `platform.governance.feature-flags.*` prefix와 legacy prefix를 동시에 쓰면 profile과 무관하게 시작에 실패한다.
 이 검증은 profile과 무관하게 적용되며 `platform.governance.operational.fail-fast-enabled=false`로도 우회되지 않는다.
 
 ## Violation handler 실패

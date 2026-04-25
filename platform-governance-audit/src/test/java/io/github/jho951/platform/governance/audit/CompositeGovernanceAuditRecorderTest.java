@@ -10,11 +10,11 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CompositeAuditLogRecorderTest {
+class CompositeGovernanceAuditRecorderTest {
     @Test
     void fansOutAuditEntriesToAllRecorders() {
         List<String> categories = new ArrayList<>();
-        CompositeAuditLogRecorder recorder = new CompositeAuditLogRecorder(List.of(
+        CompositeGovernanceAuditRecorder recorder = new CompositeGovernanceAuditRecorder(List.of(
                 entry -> categories.add("first:" + entry.category()),
                 entry -> categories.add("second:" + entry.category())
         ));

@@ -2,7 +2,6 @@ dependencies {
     implementation platform(project(':platform-governance-bom'))
     implementation project(':platform-governance-starter')
 
-    testImplementation "io.github.jho951:audit-log-api:${rootProject.auditLogVersion}"
     testImplementation "org.springframework.boot:spring-boot-autoconfigure:${rootProject.springBootVersion}"
     testImplementation "org.springframework.boot:spring-boot-test:${rootProject.springBootVersion}"
     testImplementation "org.assertj:assertj-core:${rootProject.assertjVersion}"

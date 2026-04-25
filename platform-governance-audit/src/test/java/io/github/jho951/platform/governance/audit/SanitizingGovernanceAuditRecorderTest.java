@@ -10,11 +10,11 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class SanitizingAuditLogRecorderTest {
+class SanitizingGovernanceAuditRecorderTest {
     @Test
     void enrichesAndRedactsGenericAuditEntries() {
         List<AuditEntry> entries = new ArrayList<>();
-        SanitizingAuditLogRecorder recorder = new SanitizingAuditLogRecorder(
+        SanitizingGovernanceAuditRecorder recorder = new SanitizingGovernanceAuditRecorder(
                 entries::add,
                 Map.of("audit.service-name", "auth-service", "audit.environment", "prod")
         );

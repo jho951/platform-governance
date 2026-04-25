@@ -1,7 +1,7 @@
 package io.github.jho951.platform.governance.audit;
 
 import io.github.jho951.platform.governance.api.AuditEntry;
-import io.github.jho951.platform.governance.api.AuditLogRecorder;
+import io.github.jho951.platform.governance.api.GovernanceAuditRecorder;
 import io.github.jho951.platform.governance.api.PolicyChangeEvent;
 import io.github.jho951.platform.governance.api.PolicyChangeRecorder;
 
@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class AuditPolicyChangeRecorder implements PolicyChangeRecorder {
-    private final AuditLogRecorder auditLogRecorder;
+    private final GovernanceAuditRecorder auditRecorder;
 
-    public AuditPolicyChangeRecorder(AuditLogRecorder auditLogRecorder) {
-        this.auditLogRecorder = Objects.requireNonNull(auditLogRecorder, "auditLogRecorder");
+    public AuditPolicyChangeRecorder(GovernanceAuditRecorder auditRecorder) {
+        this.auditRecorder = Objects.requireNonNull(auditRecorder, "auditRecorder");
     }
 
     @Override
@@ -27,7 +27,7 @@ public final class AuditPolicyChangeRecorder implements PolicyChangeRecorder {
         putIfPresent(attributes, "policy.actor", event.actor());
         putIfPresent(attributes, "policy.reason", event.reason());
 
-        auditLogRecorder.record(new AuditEntry(
+        auditRecorder.record(new AuditEntry(
                 "policy-change",
                 "policy changed",
                 SensitiveAuditRedactor.redactStrings(attributes),

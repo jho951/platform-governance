@@ -6,14 +6,14 @@ import com.auditlog.api.AuditEventType;
 import com.auditlog.api.AuditLogger;
 import com.auditlog.api.AuditResult;
 import io.github.jho951.platform.governance.api.AuditEntry;
-import io.github.jho951.platform.governance.api.AuditLogRecorder;
+import io.github.jho951.platform.governance.api.GovernanceAuditRecorder;
 
 import java.util.Objects;
 
-public final class AuditLoggerAuditLogRecorder implements AuditLogRecorder {
+public final class AuditLoggerGovernanceAuditRecorder implements GovernanceAuditRecorder {
     private final AuditLogger auditLogger;
 
-    public AuditLoggerAuditLogRecorder(AuditLogger auditLogger) {
+    public AuditLoggerGovernanceAuditRecorder(AuditLogger auditLogger) {
         this.auditLogger = Objects.requireNonNull(auditLogger, "auditLogger");
     }
 
