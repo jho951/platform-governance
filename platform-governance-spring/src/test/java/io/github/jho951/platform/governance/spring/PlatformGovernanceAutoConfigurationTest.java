@@ -1,6 +1,5 @@
 package io.github.jho951.platform.governance.spring;
 
-import com.auditlog.api.AuditLogger;
 import com.pluginpolicyengine.api.FeatureFlagClient;
 import com.policyconfig.contracts.PolicyKey;
 import com.policyconfig.contracts.PolicyResolver;
@@ -83,7 +82,6 @@ class PlatformGovernanceAutoConfigurationTest {
     @Test
     void auditRecorderIgnoresUserRecordersOutsidePlatformOwnedAuditSinkSurface() {
         List<String> categories = new ArrayList<>();
-        PlatformGovernanceProperties properties = new PlatformGovernanceProperties();
         GovernanceAuditRecorder coreRecorder = entry -> categories.add("platform:" + entry.category());
         GovernanceAuditRecorder userRecorder = entry -> categories.add("user:" + entry.category());
         GovernanceAuditRecorder recorder = configuration.governanceAuditRecorder(coreRecorder, provider(userRecorder));
