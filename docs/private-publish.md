@@ -29,14 +29,14 @@
 publish workflow는 `v*` tag push 또는 수동 dispatch로 실행된다.
 
 ```bash
-git tag v4.0.0
-git push origin v4.0.0
+git tag v5.0.0
+git push origin v5.0.0
 ```
 
 workflow는 tag에서 version을 계산한다.
 
 ```text
-v4.0.0 -> platformReleaseVersion=4.0.0
+v5.0.0 -> platformReleaseVersion=5.0.0
 ```
 
 필수 workflow 권한:
@@ -73,7 +73,7 @@ export GITHUB_ACTOR=jho951
 export GITHUB_TOKEN=<write:packages 권한이 있는 PAT>
 
 ./gradlew clean test publish \
-  -PplatformReleaseVersion=4.0.0 \
+  -PplatformReleaseVersion=5.0.0 \
   -PgithubPackagesUrl=https://maven.pkg.github.com/jho951/platform-governance \
   -PgithubPackagesUsername="$GITHUB_ACTOR" \
   -PgithubPackagesToken="$GITHUB_TOKEN"
@@ -110,7 +110,7 @@ dependency:
 
 ```gradle
 dependencies {
-    implementation platform("io.github.jho951.platform:platform-governance-bom:4.0.0")
+    implementation platform("io.github.jho951.platform:platform-governance-bom:5.0.0")
     implementation "io.github.jho951.platform:platform-governance-starter"
 }
 ```

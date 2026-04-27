@@ -2,6 +2,7 @@ dependencies {
     implementation platform(project(':platform-governance-bom'))
     implementation project(':platform-governance-starter')
 
+    testImplementation project(':platform-governance-common-test')
     testImplementation "org.springframework.boot:spring-boot-autoconfigure:${rootProject.springBootVersion}"
     testImplementation "org.springframework.boot:spring-boot-test:${rootProject.springBootVersion}"
     testImplementation "org.assertj:assertj-core:${rootProject.assertjVersion}"

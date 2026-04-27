@@ -20,3 +20,7 @@
 8. [troubleshooting.md](troubleshooting.md)
 9. [examples/auth-server.md](examples/auth-server.md)
 10. [quality-gates.md](quality-gates.md)
+
+11. [ownership.md](ownership.md)
+11. [consumer-conformance.md](consumer-conformance.md)
+12. [support-policy.md](support-policy.md)

@@ -10,6 +10,7 @@ import io.github.jho951.platform.governance.api.GovernanceRequest;
 import io.github.jho951.platform.governance.api.GovernanceVerdict;
 import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
+import io.github.jho951.platform.governance.test.PlatformGovernanceFixtures;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -90,7 +91,7 @@ class PlatformGovernanceSamplesSmokeTest {
                                     Map.of("feature.review.required", "true"),
                                     java.time.Instant.parse("2026-01-01T00:00:00Z")
                             ),
-                            new GovernanceContext("actor-1", "prod", Map.of("tenant", "sample"))
+                            PlatformGovernanceFixtures.sampleContext()
                     );
 
                     assertThat(verdict.decision().name()).isEqualTo("DENY");
@@ -125,7 +126,7 @@ class PlatformGovernanceSamplesSmokeTest {
                                     Map.of("feature.review.required", "true"),
                                     java.time.Instant.parse("2026-01-01T00:00:00Z")
                             ),
-                            new GovernanceContext("actor-1", "prod", Map.of())
+                            PlatformGovernanceFixtures.sampleContext()
                     );
 
                     assertThat(externalRecorderCalls.get()).isZero();

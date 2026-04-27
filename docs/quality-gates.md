@@ -1,6 +1,6 @@
 # Quality Gates
 
-CI는 `./gradlew check`를 기준 gate로 사용한다.
+CI는 `./gradlew check`를 기준 gate로 사용한다. 이 명령은 published surface 검증, starter contract 검증, governance smoke sample까지 포함한다.
 
 ## 포함 항목
 
@@ -10,6 +10,7 @@ CI는 `./gradlew check`를 기준 gate로 사용한다.
 - JaCoCo coverage verification
 - Dependency locking
 - Dependency verification
+- `verifyPublishedSurface`, `verifyStarterContract`, `verifyStage5Contract`
 
 ## JaCoCo
 

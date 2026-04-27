@@ -1,6 +1,14 @@
+plugins {
+    id 'base'
+}
+
+ext {
+    platformReleaseVersion = findProperty('release_version') ?: findProperty('releaseVersion') ?: findProperty('platformReleaseVersion') ?: '0.1.0-SNAPSHOT'
+}
+
 allprojects {
     group = 'io.github.jho951.platform'
-    version = rootProject.property('platformReleaseVersion')
+    version = rootProject.ext.platformReleaseVersion
 
     repositories {
         mavenCentral()
@@ -170,12 +178,14 @@ tasks.register('verifyPublishedSurface') {
     dependsOn project(':platform-governance-adapter-auditlog').tasks.named('generatePomFileForMavenJavaPublication')
     dependsOn project(':platform-governance-adapter-policyconfig').tasks.named('generatePomFileForMavenJavaPublication')
     dependsOn project(':platform-governance-bom').tasks.named('generatePomFileForMavenJavaPublication')
+    dependsOn project(':platform-governance-common-test').tasks.named('generatePomFileForMavenJavaPublication')
 
     doLast {
         def starterDependencies = governancePomDependencies(project(':platform-governance-starter'))
         def autoConfigurationDependencies = governancePomDependencies(project(':platform-governance-autoconfigure'))
         def auditAdapterDependencies = governancePomDependencies(project(':platform-governance-adapter-auditlog'))
         def policyConfigAdapterDependencies = governancePomDependencies(project(':platform-governance-adapter-policyconfig'))
+        def commonTestDependencies = governancePomDependencies(project(':platform-governance-common-test'))
         def bomManagedArtifactIds = governanceManagedArtifactIds(project(':platform-governance-bom'))
 
         [
@@ -217,6 +227,17 @@ tasks.register('verifyPublishedSurface') {
                 throw new GradleException("platform-governance-autoconfigure leaks ${artifactId} on compile scope")
             }
         }
+
+        [
+                'platform-governance-core',
+                'platform-governance-engine',
+                'platform-governance-adapter-auditlog',
+                'platform-governance-adapter-policyconfig'
+        ].each { artifactId ->
+            if (commonTestDependencies.any { dependency -> dependency.artifactId == artifactId && governanceHasCompileScope(dependency) }) {
+                throw new GradleException("platform-governance-common-test leaks ${artifactId} on compile scope")
+            }
+        }
     }
 }
 
@@ -230,10 +251,62 @@ tasks.register('verifyStarterContract') {
         }
 
         def readme = file('README.md').text
-        ['GovernanceAuditSink', 'GovernanceAuditRecorder', 'platform-governance-adapter-auditlog'].each { token ->
+        ['GovernanceAuditSink', 'GovernanceAuditRecorder', 'platform-governance-adapter-auditlog', 'platform-governance-common-test'].each { token ->
             if (!readme.contains(token)) {
                 throw new GradleException("README.md must mention ${token}")
             }
         }
+
+        def docsIndex = file('docs/README.md').text
+        ['ownership.md', 'quality-gates.md', 'consumer-conformance.md', 'support-policy.md'].each { docName ->
+            if (!docsIndex.contains(docName)) {
+                throw new GradleException("docs/README.md must mention ${docName}")
+            }
+        }
+
+        def ownershipDoc = file('docs/ownership.md').text
+        ['GovernanceAuditSink', 'PolicyConfigSource', 'service-owned audit bridge'].each { token ->
+            if (!ownershipDoc.contains(token)) {
+                throw new GradleException("docs/ownership.md must mention ${token}")
+            }
+        }
+
+        def qualityGatesDoc = file('docs/quality-gates.md').text
+        ['verifyPublishedSurface', 'verifyStarterContract', 'verifyStage5Contract'].each { token ->
+            if (!qualityGatesDoc.contains(token)) {
+                throw new GradleException("docs/quality-gates.md must mention ${token}")
+            }
+        }
+
+        def supportPolicyDoc = file('docs/support-policy.md').text
+        ['release_version', './gradlew clean check', 'official common-test artifact'].each { token ->
+            if (!supportPolicyDoc.contains(token)) {
+                throw new GradleException("docs/support-policy.md must mention ${token}")
+            }
+        }
+
+        def consumerConformanceDoc = file('docs/consumer-conformance.md').text
+        ['platform-governance-samples', 'GovernanceAuditSink', 'GovernanceAuditRecorder', 'service-owned audit bridge', 'platform-governance-common-test'].each { token ->
+            if (!consumerConformanceDoc.contains(token)) {
+                throw new GradleException("docs/consumer-conformance.md must mention ${token}")
+            }
+        }
     }
+}
+
+tasks.register('verifyConsumerConformance') {
+    group = 'verification'
+    description = 'Runs the official platform-governance consumer conformance test'
+    dependsOn project(':platform-governance-samples').tasks.named('test')
+}
+
+tasks.register('verifyStage5Contract') {
+    group = 'verification'
+    description = 'Runs published-surface checks and the official governance consumer conformance test'
+    dependsOn tasks.named('verifyStarterContract')
+    dependsOn tasks.named('verifyConsumerConformance')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyStage5Contract')
 }

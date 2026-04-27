@@ -16,6 +16,7 @@ commons-codec:commons-codec:1.15=checkstyle,pmd
 commons-collections:commons-collections:3.2.2=checkstyle
 info.picocli:picocli:4.7.6=checkstyle
 io.github.jho951:audit-log-api:2.0.0=mainPmdAuxClasspath,testPmdAuxClasspath,testRuntimeClasspath
+io.github.jho951:audit-log-core:2.0.0=mainPmdAuxClasspath,testPmdAuxClasspath,testRuntimeClasspath
 io.github.jho951:policy-config-contracts:2.0.0=mainPmdAuxClasspath,testPmdAuxClasspath,testRuntimeClasspath
 net.sf.saxon:Saxon-HE:12.5=checkstyle,pmd
 net.sourceforge.pmd:pmd-ant:7.8.0=pmd
