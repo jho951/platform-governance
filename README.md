@@ -139,7 +139,9 @@ platform:
 로컬 외부 라이브러리 소스로 사전 검증할 때만 다음 옵션을 사용한다.
 
 ```bash
-./gradlew test -PuseLocalLayer1=true
+./gradlew check -PuseLocalLayer1=true
 ```
+
+이 모드에서는 composite build substitution과 Gradle dependency locking 충돌을 피하기 위해 lock file 강제를 끄고, 일반 publish/mainline 검증에서는 기존 lock file 규칙을 그대로 유지한다.
 
 ## [문서](docs/README.md)

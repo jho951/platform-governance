@@ -48,6 +48,8 @@ Rule set:
 ./gradlew --write-locks check
 ```
 
+`-PuseLocalLayer1=true`로 로컬 OSS 소스를 includeBuild 하는 사전 검증 모드에서는 composite build substitution과 충돌하지 않도록 dependency locking 강제를 끈다. 일반 `./gradlew check`와 publish 경로에서는 기존 lock file gate를 그대로 사용한다.
+
 ## Dependency Verification
 
 외부 artifact checksum은 `gradle/verification-metadata.xml`에 기록한다.

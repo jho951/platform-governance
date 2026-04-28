@@ -35,3 +35,4 @@
 - 2계층은 공통 운영정책의 실행 골격을 제공하고, 정말 전사 공통인 불변 규칙만 강제한다.
 - 3계층은 자기 서비스에 필요한 정책 값만 선언하며, 서비스 차이가 필요한 정책은 override로 조정한다.
 - 로컬 외부 library 소스 검증은 `-PuseLocalLayer1=true`를 명시한 경우에만 허용한다.
+- 이 local source 검증 모드에서는 composite build substitution과 충돌하지 않도록 dependency locking 강제를 끈다.

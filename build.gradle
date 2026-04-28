@@ -14,8 +14,10 @@ allprojects {
         mavenCentral()
     }
 
-    dependencyLocking {
-        lockAllConfigurations()
+    if (!providers.gradleProperty('useLocalLayer1').map { it.toBoolean() }.orElse(false).get()) {
+        dependencyLocking {
+            lockAllConfigurations()
+        }
     }
 }
 
