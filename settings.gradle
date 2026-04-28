@@ -16,16 +16,16 @@ project(':platform-governance-adapter-policyconfig').projectDir = file('platform
 project(':platform-governance-autoconfigure').projectDir = file('platform-governance-spring')
 
 def layer1Roots = [
-        [path: file('../../module/audit-log'), substitutions: [
+        [path: file('../../oss/audit-log'), substitutions: [
                 [module: 'io.github.jho951:audit-log-api', projectPath: ':audit-log-api'],
                 [module: 'io.github.jho951:audit-log-core', projectPath: ':audit-log-core']
         ]],
-        [path: file('../../module/policy-config'), substitutions: [
+        [path: file('../../oss/policy-config'), substitutions: [
                 [module: 'io.github.jho951:policy-config-contracts', projectPath: ':policy-config-contracts'],
                 [module: 'io.github.jho951:policy-config-core', projectPath: ':policy-config-core'],
                 [module: 'io.github.jho951:policy-config-builder', projectPath: ':policy-config-builder']
         ]],
-        [path: file('../../module/plugin-policy-engine'), substitutions: [
+        [path: file('../../oss/plugin-policy-engine'), substitutions: [
                 [module: 'io.github.jho951:plugin-policy-engine-api', projectPath: ':plugin-policy-engine-api'],
                 [module: 'io.github.jho951:plugin-policy-engine-config', projectPath: ':plugin-policy-engine-config'],
                 [module: 'io.github.jho951:plugin-policy-engine-core', projectPath: ':plugin-policy-engine-core']

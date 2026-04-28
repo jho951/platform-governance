@@ -8,8 +8,10 @@ import io.github.jho951.platform.governance.api.GovernancePolicyPlugin;
 import io.github.jho951.platform.governance.api.GovernancePolicyService;
 import io.github.jho951.platform.governance.api.GovernanceRequest;
 import io.github.jho951.platform.governance.api.GovernanceVerdict;
+import io.github.jho951.platform.governance.api.GovernanceViolation;
 import io.github.jho951.platform.governance.api.PolicyConfigOperationalStatus;
 import io.github.jho951.platform.governance.api.PolicyConfigSource;
+import io.github.jho951.platform.governance.api.ViolationHandler;
 import io.github.jho951.platform.governance.test.PlatformGovernanceFixtures;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -131,6 +133,41 @@ class PlatformGovernanceSamplesSmokeTest {
 
                     assertThat(externalRecorderCalls.get()).isZero();
                     assertThat(capturingAuditSink.entries()).isNotEmpty();
+                });
+    }
+
+    @Test
+    void officialViolationHandlerSpiParticipatesWithoutReplacingGovernancePolicyService() {
+        capturingAuditSink.clear();
+        CopyOnWriteArrayList<GovernanceViolation> capturedViolations = new CopyOnWriteArrayList<>();
+
+        runner
+                .withBean(ViolationHandler.class, () -> capturedViolations::add)
+                .withPropertyValues(
+                        "spring.profiles.active=prod",
+                        "platform.governance.audit.service-name=platform-governance-samples",
+                        "platform.governance.audit.environment=prod",
+                        "platform.governance.engine.strict=true",
+                        "platform.governance.violation.handler-failure-fatal=true"
+                )
+                .run(context -> {
+                    GovernancePolicyService policyService = context.getBean(GovernancePolicyService.class);
+
+                    GovernanceVerdict verdict = policyService.evaluate(
+                            new GovernanceRequest(
+                                    "user-1",
+                                    "/documents/1",
+                                    "review",
+                                    Map.of("feature.review.required", "true"),
+                                    java.time.Instant.parse("2026-01-01T00:00:00Z")
+                            ),
+                            PlatformGovernanceFixtures.sampleContext()
+                    );
+
+                    assertThat(verdict.decision().name()).isEqualTo("DENY");
+                    assertThat(capturedViolations)
+                            .hasSize(1)
+                            .allSatisfy(violation -> assertThat(violation.verdict().reason()).contains("review is required"));
                 });
     }
 

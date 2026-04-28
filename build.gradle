@@ -251,7 +251,7 @@ tasks.register('verifyStarterContract') {
         }
 
         def readme = file('README.md').text
-        ['GovernanceAuditSink', 'GovernanceAuditRecorder', 'platform-governance-adapter-auditlog', 'platform-governance-common-test'].each { token ->
+        ['GovernanceAuditSink', 'GovernanceAuditRecorder', 'ViolationHandler', 'platform-governance-adapter-auditlog', 'platform-governance-common-test'].each { token ->
             if (!readme.contains(token)) {
                 throw new GradleException("README.md must mention ${token}")
             }
@@ -286,7 +286,7 @@ tasks.register('verifyStarterContract') {
         }
 
         def consumerConformanceDoc = file('docs/consumer-conformance.md').text
-        ['platform-governance-samples', 'GovernanceAuditSink', 'GovernanceAuditRecorder', 'service-owned audit bridge', 'platform-governance-common-test'].each { token ->
+        ['platform-governance-samples', 'GovernanceAuditSink', 'GovernanceAuditRecorder', 'ViolationHandler', 'service-owned audit bridge', 'platform-governance-common-test'].each { token ->
             if (!consumerConformanceDoc.contains(token)) {
                 throw new GradleException("docs/consumer-conformance.md must mention ${token}")
             }
